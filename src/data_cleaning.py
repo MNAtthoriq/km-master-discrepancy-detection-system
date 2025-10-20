@@ -2,7 +2,7 @@
 Data Preprocessing for KM Master Discrepancy Detection
 """
 
-from authorize_sheets import authorize_sheets
+from data_loader import sheets_loader
 import pandas as pd   
 import os
 from dotenv import load_dotenv
@@ -26,7 +26,7 @@ def op_code(df: pd.DataFrame, sheets_url: str, sheets_name: str='Master Kode OP'
   ValueError: If method is not 'complete' or 'partial'.
   """
   # import data master op
-  sh = authorize_sheets(sheets_url)
+  sh = sheets_loader(sheets_url)
   worksheet = sh.worksheet(sheets_name)
   df_master_op = pd.DataFrame(worksheet.get_all_records())
 
@@ -98,7 +98,7 @@ def change_scientific_notation(df: pd.DataFrame,
   pd.DataFrame: DataFrame with 'Toko Benar' column containing store codes
   """
   # import data master toko
-  sh = authorize_sheets(sheets_url)
+  sh = sheets_loader(sheets_url)
   worksheet = sh.worksheet(sheets_name)
   df_master = pd.DataFrame(worksheet.get_all_values())
   df_master.columns = df_master.iloc[0]

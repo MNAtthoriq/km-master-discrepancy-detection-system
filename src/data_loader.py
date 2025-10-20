@@ -7,7 +7,7 @@ from google.oauth2.service_account import Credentials
 import os
 from dotenv import load_dotenv
 
-def authorize_sheets(sheet_url: str, credentials_path: str=os.path.join(os.path.dirname(__file__), "..", "credentials.json")):
+def sheets_loader(sheet_url: str, credentials_path: str=os.path.join(os.path.dirname(__file__), "..", "credentials.json")):
     """
     Authorize Google Sheets API and return worksheet.
     
@@ -32,4 +32,4 @@ if __name__ == "__main__":
     load_dotenv(env_path)
     sheets_url = os.getenv("SHEETS_URL")
     # run
-    print(authorize_sheets(sheets_url))
+    print(sheets_loader(sheets_url))
