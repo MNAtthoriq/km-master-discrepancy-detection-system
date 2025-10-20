@@ -97,6 +97,11 @@ def change_scientific_notation(df: pd.DataFrame,
   Returns:
   pd.DataFrame: DataFrame with 'Toko Benar' column containing store codes
   """
+  # Check data types for df
+  for col in [df_column_0, df_column_1, df_column_2, df_column_3]:
+    if df[col].dtype != 'object':
+      raise TypeError(f"Column '{col}' must be string type, got {df[col].dtype}")
+    
   # import data master toko
   sh = sheets_loader(sheets_url)
   worksheet = sh.worksheet(sheets_name)
@@ -105,15 +110,20 @@ def change_scientific_notation(df: pd.DataFrame,
   df_master = df_master[1:]
   df_master = df_master.reset_index(drop=True)
 
+  # Check data types for df_master
+  for col in [master_column_0, master_column_1, master_column_2, master_column_3]:
+    if df_master[col].dtype != 'object':
+      raise TypeError(f"Master column '{col}' must be string type, got {df_master[col].dtype}")
+
   # count data that has a store with the symbol ',' or '.' (scientific notation, example: 8.00E+34)
-  df_koma = df[df[df_column_3].astype(str).str.contains(r'\,')].copy()
-  df_titik = df[df[df_column_3].astype(str).str.contains(r'\.')].copy()
-  baris_koma = len(df_koma)
-  baris_titik = len(df_titik)
+  df_comma = df[df[df_column_3].astype(str).str.contains(r'\,')].copy()
+  df_period = df[df[df_column_3].astype(str).str.contains(r'\.')].copy()
+  rows_comma = len(df_comma)
+  rows_period = len(df_period)
 
   # rename scientific notation to store code
   # if scientific code with delimiter ',' example 8,00E+34
-  if baris_koma > 0:
+  if rows_comma > 0:
     mapping = {
       (row[master_column_0], row[master_column_1], row[master_column_2].replace(".", ",")): row[master_column_3] for _, row in df_master.iterrows()
       }
@@ -122,7 +132,7 @@ def change_scientific_notation(df: pd.DataFrame,
       axis=1
     )
   # if scientific code with delimiter '.' example 8.00E+34
-  elif baris_titik > 0:
+  elif rows_period > 0:
     mapping = {
       (row[master_column_0], row[master_column_1], row[master_column_2].replace(",", ".")): row[master_column_3] for _, row in df_master.iterrows()
       }
@@ -132,18 +142,18 @@ def change_scientific_notation(df: pd.DataFrame,
     )
 
   # store a list of store codes in df_master that is not scientific to avoid repeating master fixes
-  list_bukan_saintifik = list(df_master[df_master[master_column_3].astype(str).str.contains(r'\.')][master_column_3])
+  not_scientific_list = list(df_master[df_master[master_column_3].astype(str).str.contains(r'\.')][master_column_3])
 
   # count data that has stores with the symbol ',' or '.'
-  df_koma_titik = df[df[df_column_3].astype(str).str.contains(r'\,|\.')].copy()
-  # count rows with stores not in list_bukan_saintifik
-  df_koma_titik = df_koma_titik[~df_koma_titik[df_column_3].isin(list_bukan_saintifik)].copy()
-  baris_koma_titik = len(df_koma_titik)
+  df_comma_period = df[df[df_column_3].astype(str).str.contains(r'\,|\.')].copy()
+  # count rows with stores not in not_scientific_list
+  df_comma_period = df_comma_period[~df_comma_period[df_column_3].isin(not_scientific_list)].copy()
+  rows_comma_period = len(df_comma_period)
 
-  if baris_koma_titik > 0:
+  if rows_comma_period > 0:
     print(f'Please crosscheck master toko in sheet {sheets_name} at {sheets_url}')
     print("The following store that still has the symbols ',' and '.':")
-    print(df_koma_titik)
+    print(df_comma_period)
 
   else:
     print('Store codes have been fixed')
@@ -151,4 +161,19 @@ def change_scientific_notation(df: pd.DataFrame,
   return df
 
 if __name__ == "__main__":
-  print('hello world')
+  import gdown 
+
+  # get environment variables
+  env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
+  load_dotenv(env_path)
+  sheets_url = os.getenv("SHEETS_URL")
+  gdown_id = os.getenv("GDOWN_ID")
+
+  # get data
+  data_path = os.path.join(os.path.dirname(__file__), "..", ".data", "data.csv")
+  gdown.download(id=gdown_id, output=data_path)
+  df = pd.read_csv(data_path, sep=';', low_memory=False, dtype=str)
+
+  # run
+  df = op_code(df, sheets_url)
+  print(change_scientific_notation(df, sheets_url))
