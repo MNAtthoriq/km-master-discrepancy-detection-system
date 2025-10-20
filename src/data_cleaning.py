@@ -167,13 +167,13 @@ if __name__ == "__main__":
   env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
   load_dotenv(env_path)
   sheets_url = os.getenv("SHEETS_URL")
-  gdown_id = os.getenv("GDOWN_ID")
+  opr_ids = os.getenv("GDOWN_IDS_OPERATIONAL").split(',')
 
   # get data
-  data_path = os.path.join(os.path.dirname(__file__), "..", ".data", "data.csv")
-  gdown.download(id=gdown_id, output=data_path)
-  df = pd.read_csv(data_path, sep=';', low_memory=False, dtype=str)
+  data_path = os.path.join(os.path.dirname(__file__), "..", ".data\\")
+  gdown.download(id=opr_ids[0], output=data_path)
+  df = pd.read_csv(os.path.join(data_path,"1. KM Master Nasional - Januari 2025.csv"), sep=';', low_memory=False, dtype=str)
 
-  # run
+  # # run
   df = op_code(df, sheets_url)
   print(change_scientific_notation(df, sheets_url))
