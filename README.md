@@ -23,4 +23,25 @@ A rule-based framework that applies three methods to generate **KM Master recomm
 
 If a recommendation is available from a higher-priority method (e.g, KM Master), the lower-priority methods (e.g, KM Tempuh) will be ignored.
 
-For detailed explanation, go to [src](https://github.com/MNAtthoriq/km-master-discrepancy-detection-system/tree/main/src) directory
+For detailed explanation, go to [notebooks](https://github.com/MNAtthoriq/km-master-discrepancy-detection-system/tree/main/notebooks) directory
+
+## 👑 **Result**
+
+By comparing with last year's results (2024):
+
+1. **Improvement in total stores analyzed:** increased by **321.38%**, from 16.75% of total stores in 2024 to 70.57% in 2025.
+2. **Improvement in completion time:** reduced by **77.78%**, from 90 days (3 months) in 2024 to 20 days in 2025.
+
+**Note:** The completion time refers to the duration required to develop the program. For future projects, if the data is already available, the analysis can be completed in **under 7 minutes** by simply running the program.
+
+## 📋 **Dataset**
+
+There are three datasets required for this project:
+
+1. **KM Tempuh Data (Operational Data):** contains information about KM Master and KM Tempuh for each store.
+2. **Master Zona Data (Master Data):** contains details about Master Zona, location addresses, and KM Master for each store.
+3. **Google Sheet Data:** contains supplementary data used for preprocessing, such as converting Operation Point (OP) names to OP codes and correcting store names that were altered due to Excel’s scientific notation format.
+
+**Note:** For consistency and ease of reference, all column names in this project are presented in the **Indonesian language**.
+
+> **Disclaimer:** Due to data confidentiality, this program operates on the original dataset but **is not publicly displayed**. However, dummy data is provided to illustrate the general structure of the original dataset.
