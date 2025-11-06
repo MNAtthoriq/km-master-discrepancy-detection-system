@@ -16,14 +16,14 @@ def sheets_loader(sheet_url: str, credentials_path: str=os.path.join(os.path.dir
     sheet_url (str): URL of the Google Sheet
     
     Returns:
-    gspread.Worksheet: Authorized worksheet object
+    gspread.Spreadsheet: Google Sheet
     """
     scopes = ["https://www.googleapis.com/auth/spreadsheets"]
     creds = Credentials.from_service_account_file(credentials_path, scopes=scopes)
     client = gspread.authorize(creds)
-    worksheet = client.open_by_url(sheet_url)
+    sheet = client.open_by_url(sheet_url)
     
-    return worksheet
+    return sheet
 
 if __name__ == "__main__":
     # back to project root
