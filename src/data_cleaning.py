@@ -28,7 +28,8 @@ def op_code(df: pd.DataFrame, sheets_url: str, sheets_name: str='Master Kode OP'
   # import data master op
   sh = sheets_loader(sheets_url)
   worksheet = sh.worksheet(sheets_name)
-  df_master_op = pd.DataFrame(worksheet.get_all_records())
+  df_master_op = pd.DataFrame(worksheet.get_all_records())  
+  df_master_op = df_master_op[[right_on_0, right_on_1]].copy()
 
   # rename op name to op code
   df_merged_0 = pd.merge(df, df_master_op, left_on=left_on, right_on=right_on_0, how='left')
@@ -48,7 +49,7 @@ def op_code(df: pd.DataFrame, sheets_url: str, sheets_name: str='Master Kode OP'
   if method == 'complete':
     df_na = df_merged[df_merged[left_on].isna()].copy()
     if df_na.empty:
-      print("There is no OP who doesn't use the OP Code")
+      print("OP names change to OP codes successfully")
 
       return df_merged
 
@@ -109,6 +110,7 @@ def change_scientific_notation(df: pd.DataFrame,
   df_master.columns = df_master.iloc[0]
   df_master = df_master[1:]
   df_master = df_master.reset_index(drop=True)
+  df_master = df_master[[master_column_0, master_column_1, master_column_2, master_column_3]].copy()
 
   # Check data types for df_master
   for col in [master_column_0, master_column_1, master_column_2, master_column_3]:
