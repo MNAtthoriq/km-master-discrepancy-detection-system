@@ -2,28 +2,45 @@
 Data Preprocessing for KM Master Discrepancy Detection
 """
 
-from data_loader import sheets_loader
+from google_sheets_io import sheets_loader
 import pandas as pd   
 import os
 from dotenv import load_dotenv
 
-def op_code(df: pd.DataFrame, sheets_url: str, sheets_name: str='Master Kode OP', method: str='complete', left_on: str='OP', right_on_0: str='Operating Point', right_on_1: str='Kode OP') -> pd.DataFrame:
+def op_code(df: pd.DataFrame, sheets_url: str, sheets_name: str='Master Kode OP', method: str='complete', 
+            left_on: str='OP', right_on_0: str='Operating Point', right_on_1: str='Kode OP') -> pd.DataFrame:
   """
-  Rename Operating Point (OP) name to OP code by merging it with master op data from Google Sheets.
+  Rename Operating Point (OP) name to OP code by merging it with master OP data from Google Sheets.
   Example:
   OP name: 'Point Balikpapan Reguler' -> OP code: 'PBPNR'
 
   Parameters:
-  df (pd.DataFrame): DataFrame containing OP name column
-  sheets_url (str): URL of the Google Sheets
-  sheets_name (str): Name of the Google Sheets
-  method (str): Method of dealing with OP who doesn't use the OP Code. Can be either 'complete' or 'partial'. 'complete' will raise an error if there is an OP who doesn't use the OP Code, while 'partial' will drop the OP.
+  -----------
+  df : pd.DataFrame
+    DataFrame containing OP name column.
+  sheets_url : str
+    URL of the Google Sheets.
+  sheets_name : str
+    Name of the Google Sheets.
+  method : str
+    Method of dealing with OP who doesn't use the OP Code. Can be either 'complete' or 'partial'. 
+    'complete' will raise an error if there is an OP who doesn't use the OP Code, while 'partial' will drop the OP.
+  left_on : str
+    Name of the column in df containing OP name.
+  right_on_0 : str
+    Name of the column in master OP containing OP name.
+  right_on_1 : str
+    Name of the column in master OP containing OP code.
 
   Returns:
-  pd.DataFrame: DataFrame with OP name column renamed to OP code.
+  --------
+  pd.DataFrame
+    DataFrame with OP name column changed to OP code.
 
   Raises:
-  ValueError: If method is not 'complete' or 'partial'.
+  -------
+  ValueError
+    If method is not 'complete' or 'partial'.
   """
   # import data master op
   sh = sheets_loader(sheets_url)
@@ -55,7 +72,7 @@ def op_code(df: pd.DataFrame, sheets_url: str, sheets_name: str='Master Kode OP'
 
     else:
       print(f'Please crosscheck master op in sheet {sheets_name} at {sheets_url}')
-      print('The following OP are not in master op:')
+      print('The following OP are not in master OP:')
       for i in df_na[left_on].unique():
         print(i)
 
@@ -83,20 +100,39 @@ def change_scientific_notation(df: pd.DataFrame,
   Store code: '8.00E+34' -> Store code: '8E34'
 
   Parameters:
-  df (pd.DataFrame): DataFrame containing 'Toko Benar' column
-  df_column_0 (str): Name of the column containing OP code
-  df_column_1 (str): Name of the column containing KM Master
-  df_column_2 (str): Name of the column containing Toko Saintifik
-  df_column_3 (str): Name of the column containing Toko Benar
-  sheets_url (str): URL of the Google Sheets
-  sheets_name (str): Name of the Google Sheets
-  master_column_0 (str): Name of the column containing OP code in master toko
-  master_column_1 (str): Name of the column containing KM Master in master toko
-  master_column_2 (str): Name of the column containing Toko Saintifik in master toko
-  master_column_3 (str): Name of the column containing Toko Benar in master toko
+  -----------
+  df : pd.DataFrame
+    DataFrame containing 'Toko Benar' column.
+  sheets_url : str
+    URL of the Google Sheets.
+  sheets_name : str
+    Name of the Google Sheets.
+  df_column_0 : str
+    Name of the column containing OP code.
+  df_column_1 : str
+    Name of the column containing KM Master.
+  df_column_2 : str
+    Name of the column containing Toko Saintifik.
+  df_column_3 : str
+    Name of the column containing Toko Benar.
+  master_column_0 : str
+    Name of the column containing OP code in master toko.
+  master_column_1 : str
+    Name of the column containing KM Master in master toko.
+  master_column_2 : str
+    Name of the column containing Toko Saintifik in master toko.
+  master_column_3 : str
+    Name of the column containing Toko Benar in master toko.
 
   Returns:
-  pd.DataFrame: DataFrame with 'Toko Benar' column containing store codes
+  --------
+  pd.DataFrame
+    DataFrame with store codes fixed.
+  
+  Raises:
+  -------
+  TypeError
+    If any of the specified columns are not of string type.
   """
   # Check data types for df
   for col in [df_column_0, df_column_1, df_column_2, df_column_3]:

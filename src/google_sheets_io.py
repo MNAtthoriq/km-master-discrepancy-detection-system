@@ -4,30 +4,31 @@ Authorize Google Sheets API for KM Master Discrepancy Detection System
 
 import gspread
 from google.oauth2.service_account import Credentials
-import os
+import config
 from dotenv import load_dotenv
 import logging
 
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.StreamHandler()]
-    )
+# set up logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s") # get override from utils.py later (force=True)
 logger = logging.getLogger(__name__)
 
-def sheets_loader(sheet_url: str, credentials_path: str=os.path.join(os.path.dirname(__file__), "..", "credentials.json")):
+def sheets_loader(sheet_url: str, credentials_path: str=config.CREDENTIALS_PATH) -> gspread.Spreadsheet:
     """
     Authorize Google Sheets API and return worksheet.
     
     Parameters:
-    credentials_path (str): Path to credentials.json file
-    sheet_url (str): URL of the Google Sheet
+    -----------
+    sheet_url: str
+        URL of the Google Sheet.
+    credentials_path: str
+        Path to credentials.json file.
     
     Returns:
-    gspread.Spreadsheet: Google Sheet
+    --------
+    gspread.Spreadsheet
+        Authorized Google Sheets Spreadsheet object.
     """
-    logger.info(f"Loading Google Sheets from URL: {sheet_url[:30]}...")
+    logger.info(f"Loading Google Sheets from URL: {sheet_url[:30]}...") # for privacy, only show part of the URL
     scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 
     creds = Credentials.from_service_account_file(credentials_path, scopes=scopes)
@@ -44,10 +45,12 @@ def sheets_loader(sheet_url: str, credentials_path: str=os.path.join(os.path.dir
 # !notes: add sheets_updater function later
 
 if __name__ == "__main__":
-    # back to project root
-    env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
+    import os
+
     # get environment variables
+    env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
     load_dotenv(env_path)
     sheets_url = os.getenv("SHEETS_URL")
+
     # run
     print(sheets_loader(sheets_url))
