@@ -1,8 +1,8 @@
+# private data
+data/*.csv
+
 # code testing notebook
 Untitled-1.ipynb 
-
-# folder
-.data
 
 # credentials
 credentials.json
