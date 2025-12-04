@@ -30,7 +30,7 @@ If a recommendation is available from a higher-priority method (e.g, KM Master),
 Compared to 2024's manual approach:
 
 | Metric | 2024 | 2025 | Improvement |
-|--------|------|------|-------------|
+|:--------|------:|------:|-------------:|
 | **Stores Analyzed** | 16.75% | 70.57% | **+321.38%** |
 | **Completion Time** | 90 days | 20 days | **-77.78%** |
 | **Future Runtime** | N/A | <7 minutes | **Instant** |
