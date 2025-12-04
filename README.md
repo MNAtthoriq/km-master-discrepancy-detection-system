@@ -3,45 +3,162 @@
 ![Python Code](https://img.shields.io/badge/Python-Code-blue?logo=python&logoColor=white)
 ![Sheets API](https://img.shields.io/badge/Google_Sheets-API-34A853?logo=googlesheets&logoColor=white)
 
-A systematic framework designed to identify and prioritize discrepancies in KM Master data. This system provides **KM Master recommendations** for each store. It enables the operations team to efficiently determine and prioritize which KM Master data entries should be validated for each store.
+A systematic framework to identify and prioritize discrepancies in KM Master (transportation distance) data. This system provides **KM Master recommendations** for each store, enabling operations teams to efficiently **prioritize** which KM Master data should be validated.
 
 ## 🎯 **Problem**
 
-The KM Master data represents the round-trip distance between an Operating Point and a Store. It serves as a crucial reference for determining transportation costs (*Uang Jalan Pengiriman* or **UJP**).
+KM Master represents the round-trip distance between an Operating Point (warehouse) and a Store. It's **critical** for calculating *Uang Jalan Pengiriman* or **UJP** (transportation costs).
 
-An inaccurate KM Master can lead to significant problems: **underestimated distances** may cause operational problems, while **overestimated distances** may create opportunities for frauds. Therefore, it requires regular validation to ensure accuracy.
+An inaccurate KM Master can lead to **significant issues**:
+- **Underestimated distances** → Operational problems, driver dissatisfaction
+- **Overestimated distances** → Fraud opportunities, inflated costs
 
-However, manually validating all thousands of KM Master entries for each store is highly inefficient. As a result, the operations team must prioritize which KM Master data should be validated first.
+With **thousands of stores**, manually validating all KM Master entries is impractical. The operations team needs to **prioritize** which entries to validate first.
 
 ## 💡 **Solution**
 
-A rule-based framework that applies three methods to generate **KM Master recommendations**. The system prioritizes methods in the following order:
+A rule-based recommendation system applying three methods in priority order:
 
-1. **KM Master Method**
-2. **KM Tempuh Method**
-3. **Master Zona Method**
+1. **KM Master Method** - Identifies anomalous value based on operational knowledges
+2. **KM Tempuh Method** - Uses historical KM Tempuh (delivery distance) averages
+3. **Master Zona Method** - Applies UJP zone-based recommendations
 
 If a recommendation is available from a higher-priority method (e.g, KM Master), the lower-priority methods (e.g, KM Tempuh) will be ignored.
 
-For detailed explanation, go to [notebooks](https://github.com/MNAtthoriq/km-master-discrepancy-detection-system/tree/main/notebooks) directory
+## 📊 **Result**
 
-## 👑 **Result**
+Compared to 2024's manual approach:
 
-By comparing with last year's results (2024):
-
-1. **Improvement in total stores analyzed:** increased by **321.38%**, from 16.75% of total stores in 2024 to 70.57% in 2025.
-2. **Improvement in completion time:** reduced by **77.78%**, from 90 days (3 months) in 2024 to 20 days in 2025.
-
-**Note:** The completion time refers to the duration required to develop the program. For future projects, if the data is already available, the analysis can be completed in **under 7 minutes** by simply running the program.
+| Metric | 2024 | 2025 | Improvement |
+|--------|------|------|-------------|
+| **Stores Analyzed** | 16.75% | 70.57% | **+321.38%** |
+| **Completion Time** | 90 days | 20 days | **-77.78%** |
+| **Future Runtime** | N/A | <7 minutes | **Instant** |
 
 ## 📋 **Dataset**
 
 There are three datasets required for this project:
 
-1. **KM Tempuh Data (Operational Data):** contains information about KM Master and KM Tempuh for each store.
-2. **Master Zona Data (Master Data):** contains details about Master Zona, location addresses, and KM Master for each store.
-3. **Google Sheet Data:** contains supplementary data used for preprocessing, such as converting Operation Point (OP) names to OP codes and correcting store names that were altered due to Excel’s scientific notation format.
+1. **Google Sheet Data**
+    - Sheet `Master Kode OP` - used for data preprocessing
+    - Sheet `Master Saintifik Toko` - used for data preprocessing
+    - Sheet `Rekomendasi KM Master` - used in **KM Master Method**
+2. **Operational Data:**
+    - Columns: `OP`, `Toko`, `KM Tempuh`, `KM Master`, `KM Max`
+    - Used mainly in **KM Tempuh Method**
+2. **Master Zona Data:**
+    - Columns: `OP`, `Toko`, `KM Master`, `Kode Zona`, `Provinsi`, `Status Toko`
+    - Used in **Master Zona Method**
 
-**Note:** For consistency and ease of reference, all column names in this project are presented in the **Indonesian language**.
+**Note**: Column names are in Indonesian to match source systems.
 
-> **Disclaimer:** Due to data confidentiality, this program operates on the original dataset but **is not publicly displayed**. However, dummy data is provided to illustrate the general structure of the original dataset.
+> **Disclaimer:** Due to confidentiality, this program operates on the original dataset but **is not publicly displayed**. Dummy data structure is provided for reference.
+
+## 📁 **Architecture**
+```
+km-master-discrepancy-detection-system/
+├── src/
+│   ├── __init__.py
+│   ├── config.py               # Centralized configuration
+│   ├── google_sheets_io.py     # Google Sheets API integration
+│   ├── data_preprocessing.py   # Data preprocessing functions
+│   └── utils.py                # Logger and helper functions
+├── notebooks/
+│   └── 01-KM-Master-Discrepancy-Detection.ipynb
+├── data/
+│   └── .gitkeep                # Data folder (files not included)
+├── logs/
+│   └── .gitkeep                # Log files
+├── requirements.txt
+├── .gitignore
+├── LICENSE
+└── README.md
+```
+
+## 🚀 **Quick Start**
+
+### **Prerequisites**
+```bash
+# Python 3.8+
+python --version
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### **Setup**
+
+1. **Clone Repo**
+    ```bash
+    git clone https://github.com/MNAtthoriq/km-master-discrepancy-detection-system.git
+    cd km-master-discrepancy-detection-system
+    ```
+
+2. **Configure Credentials**
+
+    Create `.env` file (Google Sheets URL for data):
+    ```env
+    !add later
+    ```
+
+    Add `credentials.json` (Google Service Account for Google Sheet API):
+    ```json
+    {
+      "type": "service_account",
+      "project_id": "your-project",
+      "private_key_id": "...",
+      "private_key": "...",
+      "client_email": "...",
+      ...
+    }
+    ```
+
+3. **Prepare Data**
+
+    Place .CSV data files in `data/` directory:
+    ```
+    data/
+    ├── 1. Operational Data - Januari 2025.csv
+    ├── 2. Operational Data - Februari 2025.csv
+    ...
+    └── Master Zona Data.csv
+    ```
+
+### **Usage**
+
+```python
+# In Jupyter Notebook
+import sys
+sys.path.append('../src')
+
+from data_loader import sheets_loader
+from data_cleaning import op_code, change_scientific_notation
+from utils import setup_logging
+
+# Setup logging
+setup_logging(log_file='../logs/analysis.log') # Change to your desired path
+
+# Run your analysis
+# (See notebook for complete workflow)
+```
+
+## 🤝 **Contributing**
+
+This is a personal portfolio project, but suggestions and feedback are welcome! 
+
+Please open an issue for discussion.
+
+## 👤 **Author**
+
+**Muhammad Naufal At-Thoriq**
+- GitHub: [MNAtthoriq](https://github.com/MNAtthoriq)
+- LinkedIn: [Muhammad Naufal At-Thoriq](https://linkedin.com/in/mnatthoriq)
+
+## 🙏 **Acknowledgments**
+
+- Mr. Ugik Sugiyanto, Mr. Aris Utara, and Mr. Sinatryo Abikusumo from operations team for domain expertise
+- Mr. Rolando Krisnanto and Mr. Angga F. Sahroni from IT team for data support
+
+---
+
+⭐ **If this project helps you, please star it on GitHub!**
