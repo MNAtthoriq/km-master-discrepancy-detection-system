@@ -124,7 +124,7 @@ class DataTracker:
         # log progress
         logger.info(
             f"[{self.name}] Step: {step_name} | Rows: {current_rows:,} | "
-            f"Change: {change:<+} ({change_pct:.2f}%) | Retention: {retention_pct:.2f}% | "
+            f"Change: {change:+,} ({change_pct:.2f}%) | Retention: {retention_pct:.2f}% | "
             f"Step Time: {step_duration:.2f}s | Cumulative Time: {cumulative_time:.2f}s"
         )
 
