@@ -198,10 +198,12 @@ class DataTracker:
         })
 
         # format dataframe
-        df_summary["Change (%)"] = df_summary["Change (%)"].map("{:+.2f}%".format)
-        df_summary["Retained (%)"] = df_summary["Retained (%)"].map("{:+.2f}%".format)
-        df_summary["Duration (s)"] = df_summary["Duration (s)"].map("{:.2f}s".format)
-        df_summary["Cumulative Time (s)"] = df_summary["Cumulative Time (s)"].map("{:.2f}s".format)
+        df_summary["Row Counts"] = df_summary["Row Counts"].map("{:,}".format)
+        df_summary["Change"] = df_summary["Change"].map("{:,}".format)
+        df_summary["Change (%)"] = df_summary["Change (%)"].map("{:+.2f}".format)
+        df_summary["Retained (%)"] = df_summary["Retained (%)"].map("{:+.2f}".format)
+        df_summary["Duration (s)"] = df_summary["Duration (s)"].map("{:.2f}".format)
+        df_summary["Cumulative Time (s)"] = df_summary["Cumulative Time (s)"].map("{:.2f}".format)
 
         logger.info(f"[{self.name}] DataTracker summary generated for {len(self.steps)} steps.")
         return df_summary
