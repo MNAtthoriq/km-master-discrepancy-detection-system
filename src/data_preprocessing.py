@@ -11,8 +11,12 @@ import logging
 logging.basicConfig(level=config.LOG_LEVEL, format=config.LOG_FORMAT) # get override from utils.py later (force=True)
 logger = logging.getLogger(__name__)
 
-def convert_to_op_code(df: pd.DataFrame, sheets_url: str, sheets_name: str=config.CTOC_SHEETS_NAME, method: str=config.CTOC_METHOD_DEFAULT,
-                      left_on: str=config.CTOC_DF_OP_NAME, right_on_0: str=config.CTOC_MASTER_OP_NAME, right_on_1: str=config.CTOC_MASTER_OP_CODE) -> pd.DataFrame:
+def convert_to_op_code(
+      df:pd.DataFrame, sheets_url:str, 
+      sheets_name:str = config.CTOC_SHEETS_NAME, method:str = config.CTOC_METHOD_DEFAULT,
+      left_on:str = config.CTOC_DF_OP_NAME, 
+      right_on_0:str = config.CTOC_MASTER_OP_NAME, right_on_1:str = config.CTOC_MASTER_OP_CODE
+    ) -> pd.DataFrame:
   """
   Rename Operating Point (OP) name to OP code by merging it with master OP data from Google Sheets.
 
@@ -65,7 +69,10 @@ def convert_to_op_code(df: pd.DataFrame, sheets_url: str, sheets_name: str=confi
 
   # handle cases where OP name is already OP code
   if not unmatched.empty:
-    unmatched_merged = pd.merge(unmatched.drop(columns=[right_on_0, right_on_1]), df_master_op, left_on=left_on, right_on=right_on_1, how='left')
+    unmatched_merged = pd.merge(
+                          unmatched.drop(columns=[right_on_0, right_on_1]), 
+                          df_master_op, left_on=left_on, right_on=right_on_1, how='left'
+                        )
     df_merged = pd.concat([matched, unmatched_merged], ignore_index=True).drop(columns=[right_on_0, left_on])
   else:
     df_merged = df_merged_0.drop(columns=[right_on_0, left_on])
@@ -101,13 +108,14 @@ def convert_to_op_code(df: pd.DataFrame, sheets_url: str, sheets_name: str=confi
   else:
     raise ValueError("method must be 'complete' or 'partial'")
 
-def correct_scientific_notation(df: pd.DataFrame,
-                              sheets_url: str,
-                              sheets_name: str=config.CSN_SHEETS_NAME,
-                              df_column_0: str=config.CSN_DF_OP_CODE, df_column_1: str=config.CSN_DF_KM_MASTER,
-                              df_column_2: str=config.CSN_DF_TOKO_SAINTIFIK, df_column_3: str=config.CSN_DF_TOKO_BENAR,
-                              master_column_0: str=config.CSN_MASTER_OP_CODE, master_column_1: str=config.CSN_MASTER_KM_MASTER,
-                              master_column_2: str=config.CSN_MASTER_TOKO_SAINTIFIK, master_column_3: str=config.CSN_MASTER_TOKO_BENAR):
+def correct_scientific_notation(
+      df:pd.DataFrame, sheets_url:str,
+      sheets_name:str = config.CSN_SHEETS_NAME,
+      df_column_0:str = config.CSN_DF_OP_CODE, df_column_1:str = config.CSN_DF_KM_MASTER,
+      df_column_2:str = config.CSN_DF_TOKO_SAINTIFIK, df_column_3:str = config.CSN_DF_TOKO_BENAR,
+      master_column_0:str = config.CSN_MASTER_OP_CODE, master_column_1:str = config.CSN_MASTER_KM_MASTER,
+      master_column_2:str = config.CSN_MASTER_TOKO_SAINTIFIK, master_column_3:str = config.CSN_MASTER_TOKO_BENAR
+    ) -> pd.DataFrame:
   """
   Change the store code that changes due to scientific format when exporting from database to the actual store code.
   
@@ -184,8 +192,9 @@ def correct_scientific_notation(df: pd.DataFrame,
   # if scientific code with delimiter ',' example 8,00E+34
   if rows_comma > 0:
     mapping = {
-      (row[master_column_0], row[master_column_1], row[master_column_2].replace(".", ",")): row[master_column_3] for _, row in df_master.iterrows()
-      }
+      (row[master_column_0], row[master_column_1], row[master_column_2].replace(".", ",")): 
+      row[master_column_3] for _, row in df_master.iterrows()
+    }
     df[df_column_3] = df.apply(
       lambda r: mapping.get((r[df_column_0], r[df_column_1], r[df_column_2]), r[df_column_3]),
       axis=1
@@ -193,8 +202,9 @@ def correct_scientific_notation(df: pd.DataFrame,
   # if scientific code with delimiter '.' example 8.00E+34
   elif rows_period > 0:
     mapping = {
-      (row[master_column_0], row[master_column_1], row[master_column_2].replace(",", ".")): row[master_column_3] for _, row in df_master.iterrows()
-      }
+      (row[master_column_0], row[master_column_1], row[master_column_2].replace(",", ".")): 
+      row[master_column_3] for _, row in df_master.iterrows()
+    }
     df[df_column_3] = df.apply(
       lambda r: mapping.get((r[df_column_0], r[df_column_1], r[df_column_2]), r[df_column_3]),
       axis=1
@@ -230,10 +240,9 @@ if __name__ == "__main__":
   env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
   load_dotenv(env_path)
   sheets_url = os.getenv("SHEETS_URL")
-  opr_ids = os.getenv("GDOWN_IDS_OPERATIONAL").split(',')
 
   # get data
-  data_path = os.path.join(os.path.dirname(__file__), "..", "data", "1. KM Master Nasional - Januari 2025.csv")
+  data_path = os.path.join(os.path.dirname(__file__), "..", "data", "1. Operational Data - Januari 2025.csv")
   df = pd.read_csv(data_path, sep=';', low_memory=False, dtype=str)
 
   # # run

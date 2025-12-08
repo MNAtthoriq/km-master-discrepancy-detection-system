@@ -11,7 +11,7 @@ import logging
 logging.basicConfig(level=config.LOG_LEVEL, format=config.LOG_FORMAT) # get override from utils.py later (force=True)
 logger = logging.getLogger(__name__)
 
-def sheets_loader(sheets_url: str, credentials_path: str=config.CREDENTIALS_PATH) -> gspread.Spreadsheet:
+def sheets_loader(sheets_url:str, credentials_path:str = config.CREDENTIALS_PATH) -> gspread.Spreadsheet:
     """
     Authorize Google Sheets API and return worksheet.
     
