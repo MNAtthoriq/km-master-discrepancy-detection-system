@@ -124,7 +124,7 @@ class DataTracker:
         # log progress
         logger.info(
             f"[{self.name}] Step: {step_name} | Rows: {current_rows:,} | "
-            f"Change: {change:+,} ({change_pct:.2f}%) | Retention: {retention_pct:.2f}% | "
+            f"Change: {change:+,} ({change_pct:+.2f}%) | Retention: {retention_pct:.2f}% | "
             f"Step Time: {step_duration:.2f}s | Cumulative Time: {cumulative_time:.2f}s"
         )
 
@@ -199,9 +199,9 @@ class DataTracker:
 
         # format dataframe
         df_summary["Row Counts"] = df_summary["Row Counts"].map("{:,}".format)
-        df_summary["Change"] = df_summary["Change"].map("{:,}".format)
+        df_summary["Change"] = df_summary["Change"].map("{:+,}".format)
         df_summary["Change (%)"] = df_summary["Change (%)"].map("{:+.2f}".format)
-        df_summary["Retained (%)"] = df_summary["Retained (%)"].map("{:+.2f}".format)
+        df_summary["Retained (%)"] = df_summary["Retained (%)"].map("{:.2f}".format)
         df_summary["Duration (s)"] = df_summary["Duration (s)"].map("{:.2f}".format)
         df_summary["Cumulative Time (s)"] = df_summary["Cumulative Time (s)"].map("{:.2f}".format)
 
