@@ -52,7 +52,7 @@ There are three datasets required for this project:
 
 **Note**: Column names are in Indonesian to match source systems.
 
-> **Disclaimer:** Due to confidentiality, this program operates on the original dataset but **is not publicly displayed**. Dummy data structure is provided for reference.
+> **Disclaimer:** Due to confidentiality, actual data is not included in this repository. Dummy data structure is provided for reference.
 
 ## 📁 **Architecture**
 ```
