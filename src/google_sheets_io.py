@@ -95,11 +95,7 @@ def sheets_updater(
 
     sheets.update([df.columns.values.tolist()] + df.values.tolist())
 
-    # hide values if configured
-    if hide_values:
-        logger.info(f"Update {mask_numeric_value(f'{len(df):,}')} rows to worksheet '{worksheet}'.")
-    else:
-        logger.info(f"Update {len(df):,} rows to worksheet '{worksheet}'.")
+    logger.info(f"Update {mask_numeric_value(f'{len(df):,}')} rows to worksheet '{worksheet}'.")
 
 if __name__ == "__main__":
     import os

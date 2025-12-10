@@ -63,11 +63,7 @@ def convert_to_op_code(
   df_master_op = pd.DataFrame(worksheet.get_all_records())  
   df_master_op = df_master_op[[right_on_0, right_on_1]].copy()
   
-  # hide values if configured
-  if hide_values:
-    logger.info(f"Loaded {mask_numeric_value(f'{len(df_master_op):,}')} OP codes from sheets {sheets_name}")
-  else:
-    logger.info(f"Loaded {len(df_master_op):,} OP codes from sheets {sheets_name}")
+  logger.info(f"Loaded {mask_numeric_value(f'{len(df_master_op):,}')} OP codes from sheets {sheets_name}")
 
   # convert op name to op code
   df_merged_0 = pd.merge(df, df_master_op, left_on=left_on, right_on=right_on_0, how='left')
@@ -96,14 +92,13 @@ def convert_to_op_code(
 
     else:
       unmapped_ops = df_na[left_on].unique()
+      logger.error(f"Unmapped OPs detected: {mask_numeric_value(f'{len(unmapped_ops):,}')} items.")
       # hide values if configured
       if hide_values:
-          logger.error(f"Unmapped OPs detected: {mask_numeric_value(f'{len(unmapped_ops):,}')} items.")
-          raise ValueError(
-            f"{mask_numeric_value(f'{len(unmapped_ops):,}')} unmapped OP(s) found."
-            f"Please update sheets {sheets_name}: {sheets_url[:30]} [REDACTED]")
+        raise ValueError(
+          f"{mask_numeric_value(f'{len(unmapped_ops):,}')} unmapped OP(s) found."
+          f"Please update sheets {sheets_name}: {sheets_url[:30]} [REDACTED]")
       else:
-        logger.error(f"Unmapped OPs detected: {len(unmapped_ops)} items. Missing OPs: {unmapped_ops}")
         raise ValueError(
           f"{len(unmapped_ops)} unmapped OP(s) found: {unmapped_ops}."
           f"Please update sheets {sheets_name}: {sheets_url}")
@@ -115,11 +110,8 @@ def convert_to_op_code(
     df_merged = df_merged.dropna(subset=[left_on]).reset_index(drop=True)
     rows_after = len(df_merged)
     rows_dropped = rows_before - rows_after
-    # hide values if configured
-    if hide_values:
-      logger.info(f"Dropped {mask_numeric_value(f'{rows_dropped:,}')} rows with unmapped OP codes ({f'{rows_dropped/rows_before*100:.2f}%'}%)")
-    else:
-      logger.info(f"Dropped {rows_dropped} rows with unmapped OP codes ({rows_dropped/rows_before*100:.2f}%)") 
+
+    logger.info(f"Dropped {mask_numeric_value(f'{rows_dropped:,}')} rows with unmapped OP codes ({f'{rows_dropped/rows_before*100:.2f}%'}%)")
 
     return df_merged
 
@@ -193,11 +185,7 @@ def correct_scientific_notation(
   df_master = df_master.reset_index(drop=True)
   df_master = df_master[[master_column_0, master_column_1, master_column_2, master_column_3]].copy()
 
-  # hide values if configured
-  if hide_values:
-    logger.info(f"Loaded {mask_numeric_value(f'{len(df_master):,}')} store mappings from sheets {sheets_name}")
-  else:
-    logger.info(f"Loaded {len(df_master)} store mappings from sheets {sheets_name}")
+  logger.info(f"Loaded {mask_numeric_value(f'{len(df_master):,}')} store mappings from sheets {sheets_name}")
 
   # check data types for df_master
   for col in [master_column_0, master_column_1, master_column_2, master_column_3]:
@@ -210,11 +198,7 @@ def correct_scientific_notation(
   rows_comma = len(df_comma)
   rows_period = len(df_period)
 
-  # hide values if configured
-  if hide_values:
-    logger.info(f"Found {mask_numeric_value(f'{rows_comma:,}')} stores with comma delimiter, {mask_numeric_value(f'{rows_period:,}')} with period delimiter")
-  else:
-    logger.info(f"Found {rows_comma} stores with comma delimiter, {rows_period} with period delimiter")
+  logger.info(f"Found {mask_numeric_value(f'{rows_comma:,}')} stores with comma delimiter, {mask_numeric_value(f'{rows_period:,}')} with period delimiter")
 
   # rename scientific notation to store code
   # if scientific code with delimiter ',' example 8,00E+34
