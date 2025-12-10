@@ -7,7 +7,7 @@ A systematic framework to identify and prioritize discrepancies in KM Master (tr
 
 ## 🎯 **Problem**
 
-KM Master represents the round-trip distance between an Operating Point (warehouse) and a Store. It's **critical** for calculating *Uang Jalan Pengiriman* or **UJP** (transportation costs).
+KM Master represents the round-trip distance between an Operating Point (OP) and a Store. It's **critical** for calculating *Uang Jalan Pengiriman* or **UJP** (transportation costs).
 
 An inaccurate KM Master can lead to **significant issues**:
 - **Underestimated distances** → Operational problems, driver dissatisfaction
@@ -52,7 +52,7 @@ There are three datasets required for this project:
 
 **Note**: Column names are in Indonesian to match source systems.
 
-> **Disclaimer:** Due to confidentiality, this program operates on the original dataset but **is not publicly displayed**. Dummy data structure is provided for reference.
+> **Disclaimer:** Due to confidentiality, actual data is not included in this repository. Dummy data structure is provided for reference.
 
 ## 📁 **Architecture**
 ```
