@@ -1,6 +1,9 @@
 # private data
 data/*.csv
 
+# logs data
+logs/*.log
+
 # code testing notebook
 Untitled-1.ipynb 
 
