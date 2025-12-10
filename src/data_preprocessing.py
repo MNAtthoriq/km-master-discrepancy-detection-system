@@ -3,6 +3,7 @@ Data Preprocessing for KM Master Discrepancy Detection
 """
 
 from google_sheets_io import sheets_loader
+from utils import mask_numeric_value
 import pandas as pd
 import config
 import logging   
@@ -12,7 +13,7 @@ logging.basicConfig(level=config.LOG_LEVEL, format=config.LOG_FORMAT) # get over
 logger = logging.getLogger(__name__)
 
 def convert_to_op_code(
-      df:pd.DataFrame, sheets_url:str, 
+      df:pd.DataFrame, sheets_url:str, hide_values:bool = config.HIDE_VALUES,
       sheets_name:str = config.CTOC_SHEETS_NAME, method:str = config.CTOC_METHOD_DEFAULT,
       left_on:str = config.CTOC_DF_OP_NAME, 
       right_on_0:str = config.CTOC_MASTER_OP_NAME, right_on_1:str = config.CTOC_MASTER_OP_CODE
@@ -29,6 +30,8 @@ def convert_to_op_code(
     DataFrame containing OP name column.
   sheets_url : str
     URL of the Google Sheets.
+  hide_values : bool
+    Whether to hide numeric values in logs.
   sheets_name : str
     Name of the Google Sheets.
   method : str
@@ -59,8 +62,12 @@ def convert_to_op_code(
   worksheet = sh.worksheet(sheets_name)
   df_master_op = pd.DataFrame(worksheet.get_all_records())  
   df_master_op = df_master_op[[right_on_0, right_on_1]].copy()
-
-  logger.info(f"Loaded {len(df_master_op)} OP codes from sheets {sheets_name}")
+  
+  # hide values if configured
+  if hide_values:
+    logger.info(f"Loaded {mask_numeric_value(f'{len(df_master_op):,}')} OP codes from sheets {sheets_name}")
+  else:
+    logger.info(f"Loaded {len(df_master_op):,} OP codes from sheets {sheets_name}")
 
   # convert op name to op code
   df_merged_0 = pd.merge(df, df_master_op, left_on=left_on, right_on=right_on_0, how='left')
@@ -89,10 +96,17 @@ def convert_to_op_code(
 
     else:
       unmapped_ops = df_na[left_on].unique()
-      logger.error(f"Unmapped OPs detected: {len(unmapped_ops)} items. Missing OPs: {unmapped_ops}")
-      raise ValueError(
-        f"{len(unmapped_ops)} unmapped OP(s) found: {unmapped_ops}."
-        f"Please update sheets {sheets_name}: {sheets_url[:30]} [REDACTED]")
+      # hide values if configured
+      if hide_values:
+          logger.error(f"Unmapped OPs detected: {mask_numeric_value(f'{len(unmapped_ops):,}')} items.")
+          raise ValueError(
+            f"{mask_numeric_value(f'{len(unmapped_ops):,}')} unmapped OP(s) found."
+            f"Please update sheets {sheets_name}: {sheets_url[:30]} [REDACTED]")
+      else:
+        logger.error(f"Unmapped OPs detected: {len(unmapped_ops)} items. Missing OPs: {unmapped_ops}")
+        raise ValueError(
+          f"{len(unmapped_ops)} unmapped OP(s) found: {unmapped_ops}."
+          f"Please update sheets {sheets_name}: {sheets_url}")
 
       return df
 
@@ -101,7 +115,11 @@ def convert_to_op_code(
     df_merged = df_merged.dropna(subset=[left_on]).reset_index(drop=True)
     rows_after = len(df_merged)
     rows_dropped = rows_before - rows_after
-    logger.info(f"Dropped {rows_dropped} rows with unmapped OP codes ({rows_dropped/rows_before*100:.2f}%)")
+    # hide values if configured
+    if hide_values:
+      logger.info(f"Dropped {mask_numeric_value(f'{rows_dropped:,}')} rows with unmapped OP codes ({f'{rows_dropped/rows_before*100:.2f}%'}%)")
+    else:
+      logger.info(f"Dropped {rows_dropped} rows with unmapped OP codes ({rows_dropped/rows_before*100:.2f}%)") 
 
     return df_merged
 
@@ -110,7 +128,7 @@ def convert_to_op_code(
 
 def correct_scientific_notation(
       df:pd.DataFrame, sheets_url:str,
-      sheets_name:str = config.CSN_SHEETS_NAME,
+      sheets_name:str = config.CSN_SHEETS_NAME, hide_values:bool = config.HIDE_VALUES,
       df_column_0:str = config.CSN_DF_OP_CODE, df_column_1:str = config.CSN_DF_KM_MASTER,
       df_column_2:str = config.CSN_DF_TOKO_SAINTIFIK, df_column_3:str = config.CSN_DF_TOKO_BENAR,
       master_column_0:str = config.CSN_MASTER_OP_CODE, master_column_1:str = config.CSN_MASTER_KM_MASTER,
@@ -130,6 +148,8 @@ def correct_scientific_notation(
     URL of the Google Sheets.
   sheets_name : str
     Name of the Google Sheets.
+  hide_values : bool
+    Whether to hide numeric values in logs.
   df_column_0 : str
     Name of the column containing OP code.
   df_column_1 : str
@@ -173,7 +193,11 @@ def correct_scientific_notation(
   df_master = df_master.reset_index(drop=True)
   df_master = df_master[[master_column_0, master_column_1, master_column_2, master_column_3]].copy()
 
-  logger.info(f"Loaded {len(df_master)} store mappings from sheets {sheets_name}")
+  # hide values if configured
+  if hide_values:
+    logger.info(f"Loaded {mask_numeric_value(f'{len(df_master):,}')} store mappings from sheets {sheets_name}")
+  else:
+    logger.info(f"Loaded {len(df_master)} store mappings from sheets {sheets_name}")
 
   # check data types for df_master
   for col in [master_column_0, master_column_1, master_column_2, master_column_3]:
@@ -186,7 +210,11 @@ def correct_scientific_notation(
   rows_comma = len(df_comma)
   rows_period = len(df_period)
 
-  logger.info(f"Found {rows_comma} stores with comma delimiter, {rows_period} with period delimiter")
+  # hide values if configured
+  if hide_values:
+    logger.info(f"Found {mask_numeric_value(f'{rows_comma:,}')} stores with comma delimiter, {mask_numeric_value(f'{rows_period:,}')} with period delimiter")
+  else:
+    logger.info(f"Found {rows_comma} stores with comma delimiter, {rows_period} with period delimiter")
 
   # rename scientific notation to store code
   # if scientific code with delimiter ',' example 8,00E+34
@@ -220,12 +248,19 @@ def correct_scientific_notation(
   sample_comma_period = df_comma_period[df_column_3].head(5).tolist()
 
   if rows_comma_period > 0:
-    logger.warning(
-    f"Found {rows_comma_period} invalid store codes containing '.' or ','. "
-    f"Sample: {sample_comma_period}")
-    raise ValueError(
-        f"{rows_comma_period} invalid store codes contain '.' or ','. "
-        f"Please update sheets {sheets_name}: {sheets_url[:30]} [REDACTED]")
+    # hide values if configured
+    if hide_values:
+      logger.warning(f"Found {mask_numeric_value(f'{rows_comma_period:,}')} invalid store codes containing '.' or ','. ")
+      raise ValueError(
+          f"{mask_numeric_value(f'{rows_comma_period:,}')} invalid store codes containing '.' or ','. "
+          f"Please update sheets {sheets_name}: {sheets_url[:30]} [REDACTED]")
+    else:
+      logger.warning(
+      f"Found {rows_comma_period} invalid store codes containing '.' or ','. "
+      f"Sample: {sample_comma_period}")
+      raise ValueError(
+          f"{rows_comma_period} invalid store codes contain '.' or ','. "
+          f"Please update sheets {sheets_name}: {sheets_url}")
 
   else:
     logger.info("All store codes successfully corrected.")
