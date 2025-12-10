@@ -1,7 +1,7 @@
 # private data but keep structure
-data/clean/
+data/clean/*
 !data/clean/.gitkeep
-data/raw/
+data/raw/*
 !data/raw/.gitkeep
 
 # logs data
