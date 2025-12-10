@@ -12,7 +12,7 @@ import time
 logger = logging.getLogger(__name__)
 
 def setup_logging(
-        log_file_path:str = None, 
+        log_file_path:str = config.LOGS_PATH, 
         log_level:int = config.LOG_LEVEL,
         log_format:str = config.LOG_FORMAT, 
         log_date_format:str = config.LOG_DATE_FORMAT
@@ -45,10 +45,65 @@ def setup_logging(
         datefmt=log_date_format,
         handlers=handlers,
         force=True # force=True to override any existing logging configuration
-    ) 
+    )
+
+def mask_numeric_value(
+        value,
+        mask_char: str = '*',
+        symbols_to_preserve: tuple = config.SYMBOLS_TO_PRESERVE
+    ) -> str:
+    """
+    Mask numeric values for data privacy while preserving ALL structure.
+
+    Parameters:
+    -----------
+    value : int, float, or str
+        Numeric value to mask.
+    mask_char : str
+        Character to use for masking.
+    symbols_to_preserve : tuple
+        Symbols to preserve when checking for zero values.
+
+    Returns:
+    --------
+    str
+        Masked numeric value as a string.
+    """
+    # Handle None or empty
+    if value is None:
+        return str(value)
+
+    # Convert to string
+    value_str = str(value).strip()
+
+    if value_str == '':
+        return value_str
+
+    # Check if value is zero (preserve zeros with all symbols)
+    # Remove all symbols to check numeric value
+    numeric_only = value_str
+    for symbol in symbols_to_preserve:
+        numeric_only = numeric_only.replace(symbol, '')
+
+    try:
+        if float(numeric_only) == 0:
+            return value_str  # Keep original format for zeros
+    except ValueError:
+        pass
+
+    # Mask all digits, preserve everything else (signs, commas, periods, %, spaces)
+    masked = ''.join(
+        mask_char if c.isdigit() else c
+        for c in value_str
+    )
+
+    return masked 
 
 class DataTracker:
-    def __init__(self, name:str = "DataTracker") -> None:
+    def __init__(
+            self, name:str = "DataTracker", 
+            hide_values:bool = config.HIDE_VALUES
+        ) -> None:
         '''
         Class to track data processing steps, row counts, and execution time.
 
@@ -56,9 +111,12 @@ class DataTracker:
         -----------
         name : str
             Name of the data tracker instance.
+        hide_values : bool
+            Whether to hide numeric values in logs and summaries.
         '''
         # initialize data tracker 
         self.name = name
+        self.hide_values = hide_values
         self.start_rows = None
         self.start_time = time.time()
 
@@ -121,10 +179,18 @@ class DataTracker:
         self.rows.append(current_rows)
         self.timestamps.append(current_time)
 
+        # hide values if configured
+        if self.hide_values:
+            display_rows = mask_numeric_value(f"{current_rows:,}")
+            display_change = mask_numeric_value(f"{change:+,}")
+        else:
+            display_rows = f"{current_rows:,}"
+            display_change = f"{change:+,}"
+
         # log progress
         logger.info(
-            f"[{self.name}] Step: {step_name} | Rows: {current_rows:,} | "
-            f"Change: {change:+,} ({change_pct:+.2f}%) | Retention: {retention_pct:.2f}% | "
+            f"[{self.name}] Step: {step_name} | Counts: {display_rows} | "
+            f"Change: {display_change} ({change_pct:+.2f}%) | Retention: {retention_pct:.2f}% | "
             f"Step Time: {step_duration:.2f}s | Cumulative Time: {cumulative_time:.2f}s"
         )
 
@@ -183,7 +249,7 @@ class DataTracker:
         # recap data
         df_summary = pd.DataFrame({
             "Step": self.steps,
-            "Row Counts": self.rows,
+            "Counts": self.rows,
             "Change": [self.rows[i] - self.rows[i-1] if i > 0 else 0 for i in range(len(self.rows))],
             "Change (%)": [
                 ((self.rows[i] - self.rows[i-1]) / self.rows[i-1] * 100) if i > 0 and self.rows[i-1] > 0 else 0 
@@ -198,8 +264,13 @@ class DataTracker:
         })
 
         # format dataframe
-        df_summary["Row Counts"] = df_summary["Row Counts"].map("{:,}".format)
-        df_summary["Change"] = df_summary["Change"].map("{:+,}".format)
+        if self.hide_values:
+            df_summary["Counts"] = df_summary["Counts"].apply(lambda x: mask_numeric_value(f"{x:,}"))
+            df_summary["Change"] = df_summary["Change"].apply(lambda x: mask_numeric_value(f"{x:+,}"))
+        else:
+            df_summary["Counts"] = df_summary["Counts"].map("{:,}".format)
+            df_summary["Change"] = df_summary["Change"].map("{:+,}".format)
+
         df_summary["Change (%)"] = df_summary["Change (%)"].map("{:+.2f}".format)
         df_summary["Retained (%)"] = df_summary["Retained (%)"].map("{:.2f}".format)
         df_summary["Duration (s)"] = df_summary["Duration (s)"].map("{:.2f}".format)
@@ -210,7 +281,8 @@ class DataTracker:
         
 def result_summary(
         total_stores:int, validated_stores:int,
-        stores_result:dict, times_result: dict
+        stores_result:dict, times_result: dict,
+        hide_values: bool = config.HIDE_VALUES
     ) -> None:
     '''
     Display a summary of the data processing results including store counts and execution times.
@@ -225,6 +297,8 @@ def result_summary(
         Dictionary of DataTracker instances for store recommendations by method.
     times_result : dict
         Dictionary of DataTracker instances for execution times by method.
+    hide_values : bool
+        Whether to hide numeric values in the summary.
     '''
     # calculate stores
     validated_stores_pct = (validated_stores / total_stores * 100) if total_stores > 0 else 0
@@ -237,6 +311,18 @@ def result_summary(
 
     total_time = sum(tracker.get_total_time() for tracker in times_result.values())
 
+    # hide values if configured
+    if hide_values:
+        display_total_stores = mask_numeric_value(f"{total_stores:>8,}")
+        display_validated_stores = mask_numeric_value(f"{validated_stores:>8,}")
+        display_total_rec_stores = mask_numeric_value(f"{total_rec_stores:>8,}")
+        display_unprocessed_stores = mask_numeric_value(f"{unprocessed_stores:>8,}")
+    else:
+        display_total_stores = f"{total_stores:>8,}"
+        display_validated_stores = f"{validated_stores:>8,}"
+        display_total_rec_stores = f"{total_rec_stores:>8,}"
+        display_unprocessed_stores = f"{unprocessed_stores:>8,}"
+
     # console summary
     BOLD = '\033[1m'
     RESET = '\033[0m'
@@ -245,17 +331,22 @@ def result_summary(
     print("\n" + "="*70)
     print(f"{BOLD}EXECUTION STORE SUMMARY{RESET}")
     print("="*70)
-    print(f"{'Total Analyzed Stores':<30}: {total_stores:>8,} stores")
-    print(f"{'Validated Stores':<30}: {validated_stores:>8,} stores ({validated_stores_pct:05.2f}%)")
+    print(f"{'Total Analyzed Stores':<30}: {display_total_stores} stores")
+    print(f"{'Validated Stores':<30}: {display_validated_stores} stores ({validated_stores_pct:05.2f}%)")
     print("\nRecommendations by Method:")
     print("-"*70)
     for method_name, tracker in stores_result.items():
         method_stores = tracker.get_total_rows()
         method_stores_pct = (method_stores / total_stores * 100) if total_stores > 0 else 0
-        print(f"{method_name:<30}: {method_stores:>8,} stores ({method_stores_pct:05.2f}%)")
+        # hide values if configured
+        if hide_values:
+            display_method_stores = mask_numeric_value(f"{method_stores:>8,}")
+        else:
+            display_method_stores = f"{method_stores:>8,}"
+        print(f"{method_name:<30}: {display_method_stores} stores ({method_stores_pct:05.2f}%)")
     print("-"*70)
-    print(f"{'Total Recommended Stores':<30}: {total_rec_stores:>8,} stores ({total_rec_stores_pct:05.2f}%)")
-    print(f"\n{'Unprocessed Stores':<30}: {unprocessed_stores:>8,} stores ({unprocessed_stores_pct:05.2f}%)")
+    print(f"{'Total Recommended Stores':<30}: {display_total_rec_stores} stores ({total_rec_stores_pct:05.2f}%)")
+    print(f"\n{'Unprocessed Stores':<30}: {display_unprocessed_stores} stores ({unprocessed_stores_pct:05.2f}%)")
     # time summary
     print("\n" + "="*70)
     print(f"{BOLD}EXECUTION TIME SUMMARY{RESET}")
@@ -267,7 +358,7 @@ def result_summary(
     print(f"{'Total Execution Time':<30}: {total_time:>8.2f} secs ({total_time/60:05.2f} mins)\n")
     print("="*70 + "\n")
 
-    logger.info(f"Displayed results summary: {total_stores:,} total stores, {validated_stores:,} validated stores, {total_rec_stores:,} recommended stores, {unprocessed_stores:,} unprocessed stores, total execution time {total_time:.2f} secs.")
+    logger.info(f"Displayed results summary: {display_total_stores} total stores, {display_validated_stores} validated stores, {display_total_rec_stores} recommended stores, {display_unprocessed_stores} unprocessed stores, total execution time {total_time:.2f} secs.")
 
 
     
