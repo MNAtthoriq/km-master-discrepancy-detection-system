@@ -14,9 +14,18 @@ LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 # ==============================================================
-# GOOGLE SHEETS IO CONFIGURATION
+# PATH CONFIGURATION
 # ==============================================================
-CREDENTIALS_PATH = os.path.join(os.path.dirname(__file__), "..", "credentials.json")
+MAIN_PATH = os.path.join(os.path.dirname(__file__), "..")
+DATA_PATH = os.path.join(MAIN_PATH, "data")
+LOGS_PATH = os.path.join(MAIN_PATH, "logs", "km_master_discrepancy_detection.log")
+CREDENTIALS_PATH = os.path.join(MAIN_PATH, "credentials.json")
+ENV_PATH = os.path.join(MAIN_PATH, ".env")
+
+# ==============================================================
+# GOOGLE SHEETS CONFIGURATION
+# ==============================================================
+UPDATED_WORKSHEET = "Rekomendasi Manual KM Master"
 
 # ==============================================================
 # DATA PREPROCESSING CONFIGURATION
@@ -36,3 +45,10 @@ CSN_MASTER_OP_CODE = "Kode OP"
 CSN_MASTER_KM_MASTER = "KM Master"
 CSN_MASTER_TOKO_SAINTIFIK = "Toko Saintifik"
 CSN_MASTER_TOKO_BENAR = "Toko Benar"
+
+# ==============================================================
+# UTILS CONFIGURATION
+# ==============================================================
+SYMBOLS_TO_PRESERVE = (',', '.', '%', ' ', '+', '-')
+HIDE_VALUES = True
+
