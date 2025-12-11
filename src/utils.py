@@ -7,6 +7,11 @@ import logging
 import config
 import pandas as pd
 import time
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
+import seaborn as sns
 
 # setup logging
 logger = logging.getLogger(__name__)
@@ -49,9 +54,9 @@ def setup_logging(
 
 def mask_numeric_value(
         value,
-        mask_char: str = '*',
-        symbols_to_preserve: tuple = config.SYMBOLS_TO_PRESERVE,
-        hide_values: bool = config.HIDE_VALUES
+        mask_char:str = '*',
+        symbols_to_preserve:tuple = config.SYMBOLS_TO_PRESERVE,
+        hide_values:bool = config.HIDE_VALUES
     ) -> str:
     """
     Mask numeric values for data privacy while preserving ALL structure.
@@ -99,6 +104,205 @@ def mask_numeric_value(
     )
 
     return masked 
+
+def filter_iqr(
+        df:pd.DataFrame, column:str = config.IQR_COLUMN, 
+        lower_constant:float = config.LOWER_IQR_CONSTANT, 
+        upper_constant:float = config.UPPER_IQR_CONSTANT
+    ) -> tuple:
+    '''
+    Apply IQR filtering to a DataFrame column to remove outliers.
+
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        Input DataFrame.
+    column : str
+        Column name to apply IQR filtering on.
+    lower_constant : float
+        Constant to multiply with IQR for lower bound.
+    upper_constant : float 
+        Constant to multiply with IQR for upper bound.
+    
+    Returns:
+    --------
+    tuple
+        Filtered DataFrame, Q1, Q3, IQR, lower bound, upper bound.
+    '''
+    logger.info(f"Applying IQR filter on column '{column}' with constants: lower={lower_constant}, upper={upper_constant}")
+
+    # calculate Q1, Q3, and IQR
+    Q1 = df[column].quantile(0.25)
+    Q3 = df[column].quantile(0.75)
+    IQR = Q3 - Q1
+
+    # calculate bounds
+    lower_bound = Q1 - (lower_constant * IQR)
+    upper_bound = Q3 + (upper_constant * IQR)
+
+    # filter dataframe
+    df_filtered = df[(df[column] >= lower_bound) & (df[column] <= upper_bound)].copy()
+
+    rows_before = len(df)
+    rows_after = len(df_filtered)
+    rows_removed = rows_before - rows_after
+    pct_removed = (rows_removed / rows_before * 100) if rows_before > 0 else 0
+
+    logger.info(f"IQR filter applied on '{column}': {mask_numeric_value(f'{rows_removed:,}')} rows removed ({pct_removed:.2f}%)")
+    
+    return df_filtered, Q1, Q3, IQR, lower_bound, upper_bound
+
+def plot_outlier(
+        df:pd.DataFrame, name:str = "Main Method",
+        column:str = config.IQR_COLUMN, 
+        lower_constant:float = config.LOWER_IQR_CONSTANT, 
+        upper_constant:float = config.UPPER_IQR_CONSTANT,
+        lower_zoom_constant:float = config.LOWER_ZOOM_CONSTANT, 
+        upper_zoom_constant:float = config.UPPER_ZOOM_CONSTANT,
+        hide_values:bool = config.HIDE_VALUES
+    ) -> None:
+    '''
+    Plot outlier detection using IQR method for a DataFrame column.
+
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        Input DataFrame.
+    name : str
+        Name of the method or dataset.
+    column : str
+        Column name to plot outlier detection on.
+    lower_constant : float
+        Constant to multiply with IQR for lower bound.
+    upper_constant : float 
+        Constant to multiply with IQR for upper bound.
+    lower_zoom_constant : float
+        Constant to determine zoomed area lower limit.
+    upper_zoom_constant : float
+        Constant to determine zoomed area upper limit.
+    hide_values : bool
+        Whether to hide numeric values on the plot.
+    '''
+    logger.info(f"Plotting outlier detection for '{name}' on column '{column}' for '{name}'")
+
+    _, Q1, Q3, IQR, lower_bound, upper_bound = filter_iqr(df, column, lower_constant, upper_constant)
+    lower_zoom = Q1 - (lower_zoom_constant * IQR)
+    upper_zoom = Q3 + (upper_zoom_constant * IQR)
+
+    # set colors and style
+    colors = sns.color_palette("deep")
+    bg_color = "#F9F9F9"
+    sns.set_style("white", {'figure.facecolor': bg_color})
+    plt.rcParams['font.family'] = "serif"
+
+    # create figure and gridspec
+    fig = plt.figure(figsize=(16, 10))
+    gs = gridspec.GridSpec(16, 28, figure=fig, hspace=0.3, wspace=0.4)
+
+    # make axes
+    ax_text = fig.add_subplot(gs[:2,:])
+    ax_zoom = fig.add_subplot(gs[2:,:19])
+    ax_legend = fig.add_subplot(gs[2:9,19:])
+    ax_full = fig.add_subplot(gs[9:15,19:])
+
+    # ax text
+    # add text
+    ax_text.text(
+        0.5, 0.7, 'IQR Method for Outlier Detection', 
+        transform=ax_text.transAxes,
+        ha='center', va='center', 
+        fontsize=20, fontweight='bold'
+    )
+    ax_text.text(
+        0.5, 0.35, f'{name}',
+        transform=ax_text.transAxes,
+        ha='center', va='center', fontsize=20
+    )
+    # set background and hide axes
+    ax_text.set_facecolor(bg_color)
+    sns.despine(ax=ax_text, left=True, bottom=True)
+    ax_text.xaxis.set_visible(False)
+    ax_text.yaxis.set_visible(False)
+
+    # ax zoom
+    # kde plot
+    sns.kdeplot(data=df, x=column, ax=ax_zoom, fill=True, color=colors[4])
+    # add lines for Q1, Q3, bounds
+    ax_zoom.axvline(Q1, color=colors[2], linestyle='dashed', linewidth=1.5)
+    ax_zoom.axvline(Q3, color=colors[2], linestyle='dashed', linewidth=1.5)
+    ax_zoom.axvline(lower_bound, color=colors[3], linestyle='dashed', linewidth=1.5)
+    ax_zoom.axvline(upper_bound, color=colors[3], linestyle='dashed', linewidth=1.5)
+    # set labels and limits
+    sns.despine(ax=ax_zoom, left=True)
+    ax_zoom.yaxis.set_visible(False)
+    ax_zoom.set_xlim(lower_zoom, upper_zoom)
+    ax_zoom.set_xlabel(column, fontsize=12)
+    # hide x tick labels if configured
+    if hide_values:
+        ax_zoom.set_xticklabels([])
+    # Add transparent black boxes for outlier regions
+    ax_zoom.axvspan(ax_zoom.get_xlim()[0], lower_bound, alpha=0.2, color=colors[3])
+    ax_zoom.axvspan(upper_bound, ax_zoom.get_xlim()[1], alpha=0.2, color=colors[3])
+    # add title as box
+    ax_zoom.text(
+        0.13, 0.95,
+        "Zoomed Distribution",
+        ha='center',
+        va='center',
+        transform=ax_zoom.transAxes,
+        bbox=dict(facecolor="white", edgecolor="black", boxstyle="round")
+    )
+
+    # ax legend
+    # create legend
+    legend_elements = [
+        Line2D([0], [0], color=colors[2], linestyle='dashed', linewidth=1.5, label=f'{'Quartile 1:':<20} {q1:>8.2f} KM'),
+        Line2D([0], [0], color=colors[2], linestyle='dashed', linewidth=1.5, label=f'{'Quartile 3:':<20} {q3:>8.2f} KM'),
+        Line2D([0], [0], color=colors[3], linestyle='dashed', linewidth=1.5, label=f'{'Lower Bound:':<16} {lower_bound:>8.2f} KM'),
+        Line2D([0], [0], color=colors[3], linestyle='dashed', linewidth=1.5, label=f'{'Upper Bound:':<16} {upper_bound:>8.2f} KM'),
+        Patch(facecolor=colors[3], alpha=0.2, label='Remove Outlier'),
+    ]
+    ax_legend.legend(handles=legend_elements, loc='center', fontsize=12, frameon=True,
+            fancybox=True, shadow=True, title='Legends\n', title_fontsize=12).get_title().set_fontweight('bold')
+    # set background and hide axes
+    ax_legend.set_facecolor(bg_color)
+    sns.despine(ax=ax_legend, left=True, bottom=True)
+    ax_legend.xaxis.set_visible(False)
+    ax_legend.yaxis.set_visible(False)
+
+    # ax full
+    # kde plot
+    sns.kdeplot(data=df, x=column, ax=ax_full, fill=True, color=colors[4])
+    # add lines for Q1, Q3, bounds
+    ax_full.axvline(Q1, color=colors[2], linestyle='dashed', linewidth=1.5)
+    ax_full.axvline(Q3, color=colors[2], linestyle='dashed', linewidth=1.5)
+    ax_full.axvline(lower_bound, color=colors[3], linestyle='dashed', linewidth=1.5)
+    ax_full.axvline(upper_bound, color=colors[3], linestyle='dashed', linewidth=1.5)
+    # set labels and limits
+    sns.despine(ax=ax_full, left=True)
+    ax_full.yaxis.set_visible(False)
+    ax_full.set_xlim(ax_full.get_xlim())
+    ax_full.set_xlabel(column, fontsize=12)
+    # hide x tick labels if configured
+    if hide_values:
+        ax_full.set_xticklabels([])
+    # Add transparent black boxes for outlier regions
+    ax_full.axvspan(ax_full.get_xlim()[0], lower_bound, alpha=0.2, color=colors[3])
+    ax_full.axvspan(upper_bound, ax_full.get_xlim()[1], alpha=0.2, color=colors[3])
+    # add title as box
+    ax_full.text(
+        0.25, 0.9,
+        "Full Distribution",
+        ha='center',
+        va='center',
+        transform=ax_full.transAxes,
+        bbox=dict(facecolor="white", edgecolor="black", boxstyle="round")
+    )
+
+    # show plot
+    plt.show()
+
+    logger.info(f"Outlier detection plot generated for '{name}' on column '{column}' for '{name}'")
 
 class DataTracker:
     def __init__(

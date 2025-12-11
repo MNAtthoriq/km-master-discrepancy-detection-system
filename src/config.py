@@ -50,5 +50,10 @@ CSN_MASTER_TOKO_BENAR = "Toko Benar"
 # UTILS CONFIGURATION
 # ==============================================================
 SYMBOLS_TO_PRESERVE = (',', '.', '%', ' ', '+', '-')
+IQR_COLUMN = "KM Deviation"
+LOWER_IQR_CONSTANT = 1.5
+UPPER_IQR_CONSTANT = 1.5
+LOWER_ZOOM_CONSTANT = 10.0
+UPPER_ZOOM_CONSTANT = 10.0
 HIDE_VALUES = True
 
