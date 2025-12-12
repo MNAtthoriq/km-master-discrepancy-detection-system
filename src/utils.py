@@ -256,8 +256,8 @@ def plot_outlier(
     # ax legend
     # create legend
     legend_elements = [
-        Line2D([0], [0], color=colors[2], linestyle='dashed', linewidth=1.5, label=f'{'Quartile 1:':<20} {q1:>8.2f} KM'),
-        Line2D([0], [0], color=colors[2], linestyle='dashed', linewidth=1.5, label=f'{'Quartile 3:':<20} {q3:>8.2f} KM'),
+        Line2D([0], [0], color=colors[2], linestyle='dashed', linewidth=1.5, label=f'{'Quartile 1:':<20} {Q1:>8.2f} KM'),
+        Line2D([0], [0], color=colors[2], linestyle='dashed', linewidth=1.5, label=f'{'Quartile 3:':<20} {Q3:>8.2f} KM'),
         Line2D([0], [0], color=colors[3], linestyle='dashed', linewidth=1.5, label=f'{'Lower Bound:':<16} {lower_bound:>8.2f} KM'),
         Line2D([0], [0], color=colors[3], linestyle='dashed', linewidth=1.5, label=f'{'Upper Bound:':<16} {upper_bound:>8.2f} KM'),
         Patch(facecolor=colors[3], alpha=0.2, label='Remove Outlier'),
