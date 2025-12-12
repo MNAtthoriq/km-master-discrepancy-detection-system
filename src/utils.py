@@ -245,7 +245,7 @@ def plot_outlier(
     ax_zoom.axvspan(upper_bound, ax_zoom.get_xlim()[1], alpha=0.2, color=colors[3])
     # add title as box
     ax_zoom.text(
-        0.13, 0.95,
+        0.117, 0.95,
         "Zoomed Distribution",
         ha='center',
         va='center',
@@ -291,7 +291,7 @@ def plot_outlier(
     ax_full.axvspan(upper_bound, ax_full.get_xlim()[1], alpha=0.2, color=colors[3])
     # add title as box
     ax_full.text(
-        0.25, 0.9,
+        0.2, 0.9,
         "Full Distribution",
         ha='center',
         va='center',
