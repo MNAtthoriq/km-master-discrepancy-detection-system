@@ -154,11 +154,6 @@ Please open an issue for discussion.
 - GitHub: [MNAtthoriq](https://github.com/MNAtthoriq)
 - LinkedIn: [Muhammad Naufal At-Thoriq](https://linkedin.com/in/mnatthoriq)
 
-## 🙏 **Acknowledgments**
-
-- Mr. Ugik Sugiyanto, Mr. Aris Utara, and Mr. Sinatryo Abikusumo from operations team for domain expertise
-- Mr. Rolando Krisnanto and Mr. Angga F. Sahroni from IT team for data support
-
 ---
 
 ⭐ **If this project helps you, please star it on GitHub!**
