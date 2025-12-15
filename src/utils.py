@@ -189,6 +189,9 @@ def plot_outlier(
     lower_zoom = Q1 - (lower_zoom_constant * IQR)
     upper_zoom = Q3 + (upper_zoom_constant * IQR)
 
+    # set zoomed dataframe
+    df_zoom = df[(df[column] >= lower_zoom) & (df[column] <= upper_zoom)].copy()
+
     # set colors and style
     colors = sns.color_palette("deep")
     bg_color = "#F9F9F9"
@@ -226,16 +229,14 @@ def plot_outlier(
 
     # ax zoom
     # kde plot
-    sns.kdeplot(data=df, x=column, ax=ax_zoom, fill=True, color=colors[4])
-    # add lines for Q1, Q3, bounds
-    ax_zoom.axvline(Q1, color=colors[2], linestyle='dashed', linewidth=1.5)
-    ax_zoom.axvline(Q3, color=colors[2], linestyle='dashed', linewidth=1.5)
+    sns.kdeplot(data=df_zoom, x=column, ax=ax_zoom, fill=True, color=colors[4])
+    # add lines for bounds
     ax_zoom.axvline(lower_bound, color=colors[3], linestyle='dashed', linewidth=1.5)
     ax_zoom.axvline(upper_bound, color=colors[3], linestyle='dashed', linewidth=1.5)
     # set labels and limits
     sns.despine(ax=ax_zoom, left=True)
     ax_zoom.yaxis.set_visible(False)
-    ax_zoom.set_xlim(lower_zoom, upper_zoom)
+    ax_zoom.set_xlim(ax_zoom.get_xlim())
     ax_zoom.set_xlabel(column, fontsize=12)
     # hide x tick labels if configured
     if hide_values:
@@ -256,12 +257,12 @@ def plot_outlier(
     # ax legend
     # create legend
     legend_elements = [
-        Line2D([0], [0], color=colors[2], linestyle='dashed', linewidth=1.5, label=f'{'Quartile 1:':<20} {Q1:>8.2f} KM'),
-        Line2D([0], [0], color=colors[2], linestyle='dashed', linewidth=1.5, label=f'{'Quartile 3:':<20} {Q3:>8.2f} KM'),
-        Line2D([0], [0], color=colors[3], linestyle='dashed', linewidth=1.5, label=f'{'Lower Bound:':<16} {lower_bound:>8.2f} KM'),
-        Line2D([0], [0], color=colors[3], linestyle='dashed', linewidth=1.5, label=f'{'Upper Bound:':<16} {upper_bound:>8.2f} KM'),
-        Patch(facecolor=colors[3], alpha=0.2, label='Remove Outlier'),
-    ]
+    Line2D([0], [0], color=colors[3], linestyle='dashed', linewidth=1.5, 
+           label=f'Lower Bound: {lower_bound:,.0f} KM\n(Q1 - {lower_constant:.2f}·IQR)'),
+    Line2D([0], [0], color=colors[3], linestyle='dashed', linewidth=1.5, 
+           label=f'Upper Bound: {upper_bound:,.0f} KM\n(Q3 + {upper_constant:.2f}·IQR)'),
+    Patch(facecolor=colors[3], alpha=0.2, label='Outlier Region'),
+    ] 
     ax_legend.legend(handles=legend_elements, loc='center', fontsize=12, frameon=True,
             fancybox=True, shadow=True, title='Legends\n', title_fontsize=12).get_title().set_fontweight('bold')
     # set background and hide axes
@@ -273,9 +274,7 @@ def plot_outlier(
     # ax full
     # kde plot
     sns.kdeplot(data=df, x=column, ax=ax_full, fill=True, color=colors[4])
-    # add lines for Q1, Q3, bounds
-    ax_full.axvline(Q1, color=colors[2], linestyle='dashed', linewidth=1.5)
-    ax_full.axvline(Q3, color=colors[2], linestyle='dashed', linewidth=1.5)
+    # add lines for bounds
     ax_full.axvline(lower_bound, color=colors[3], linestyle='dashed', linewidth=1.5)
     ax_full.axvline(upper_bound, color=colors[3], linestyle='dashed', linewidth=1.5)
     # set labels and limits
@@ -303,6 +302,43 @@ def plot_outlier(
     plt.show()
 
     logger.info(f"Outlier detection plot generated for '{name}' on column '{column}' for '{name}'")
+
+def pivot_and_remove_low_freq_stores(
+        df:pd.DataFrame, 
+        count_toko:int = config.COUNT_TOKO
+    ) -> pd.DataFrame:
+    # validate column in dataframe
+    required_columns = ['OP', 'Toko', 'Kode Zona', 'KM Master', 'KM Tempuh', 'KM Max']
+    for col in required_columns:
+        if col not in df.columns:
+            logger.exception(f"Column '{col}' not found in DataFrame.")
+            raise ValueError(f"Column '{col}' not found in DataFrame.")
+        
+    # create pivot table
+    pivot_table = pd.pivot_table(
+                    df, index=['OP', 'Toko', 'Kode Zona'],
+                    values=['KM Master', 'KM Tempuh', 'KM Max'],
+                    aggfunc={
+                        'Toko': 'count',
+                        'KM Master': 'mean',
+                        'KM Tempuh': 'mean',
+                        'KM Max': 'mean'
+                    })
+    
+    # format pivot table
+    pivot_table = pivot_table.rename(columns={'Toko': 'Freq Toko'}).reset_index()
+    pivot_table = pivot_table[['OP', 'Toko', 'Kode Zona', 'Freq Toko', 'KM Master', 'KM Tempuh', 'KM Max']]
+    pivot_table['KM Tempuh'] = pivot_table['KM Tempuh'].round()
+
+    logger.info(f"Pivot table created: {mask_numeric_value(f'{len(pivot_table[['OP', 'Toko']].drop_duplicates()):,}')} unique stores")
+
+    # remove low-frequency stores
+    pivot_table_filtered = pivot_table[pivot_table['Freq Toko'] > count_toko].copy()
+
+    logger.info(f"After removing low-frequency stores with frequency <= {count_toko}: {mask_numeric_value(f'{len(pivot_table_filtered[['OP', 'Toko']].drop_duplicates()):,}')} unique stores")
+
+    return pivot_table_filtered
+
 
 class DataTracker:
     def __init__(
