@@ -56,6 +56,7 @@ UPPER_IQR_CONSTANT = 1.5
 LOWER_ZOOM_CONSTANT = 10.0
 UPPER_ZOOM_CONSTANT = 10.0
 COUNT_TOKO = 1
+UNIQUE_STORE_COLUMNS = ['OP', 'Toko']
 HIDE_VALUES = True
 
 # ==============================================================
