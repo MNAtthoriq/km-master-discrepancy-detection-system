@@ -234,7 +234,6 @@ def plot_outlier(
     ax_zoom.axvline(lower_bound, color=colors[3], linestyle='dashed', linewidth=1.5)
     ax_zoom.axvline(upper_bound, color=colors[3], linestyle='dashed', linewidth=1.5)
     # set labels and limits
-    sns.despine(ax=ax_zoom, left=True)
     ax_zoom.yaxis.set_visible(False)
     ax_zoom.set_xlim(ax_zoom.get_xlim())
     ax_zoom.set_xlabel(column, fontsize=12)
@@ -258,9 +257,9 @@ def plot_outlier(
     # create legend
     legend_elements = [
     Line2D([0], [0], color=colors[3], linestyle='dashed', linewidth=1.5, 
-           label=f'Lower Bound: {lower_bound:,.0f} KM\n(Q1 - {lower_constant:.2f}·IQR)'),
+           label=f'Lower Bound: {mask_numeric_value(f"{lower_bound:,.1f}")} KM\n   (k = {lower_constant:.2f})'),
     Line2D([0], [0], color=colors[3], linestyle='dashed', linewidth=1.5, 
-           label=f'Upper Bound: {upper_bound:,.0f} KM\n(Q3 + {upper_constant:.2f}·IQR)'),
+           label=f'Upper Bound: {mask_numeric_value(f"{upper_bound:,.1f}")} KM\n   (k = {upper_constant:.2f})'),
     Patch(facecolor=colors[3], alpha=0.2, label='Outlier Region'),
     ] 
     ax_legend.legend(handles=legend_elements, loc='center', fontsize=12, frameon=True,
@@ -278,7 +277,6 @@ def plot_outlier(
     ax_full.axvline(lower_bound, color=colors[3], linestyle='dashed', linewidth=1.5)
     ax_full.axvline(upper_bound, color=colors[3], linestyle='dashed', linewidth=1.5)
     # set labels and limits
-    sns.despine(ax=ax_full, left=True)
     ax_full.yaxis.set_visible(False)
     ax_full.set_xlim(ax_full.get_xlim())
     ax_full.set_xlabel(column, fontsize=12)
@@ -308,7 +306,7 @@ def pivot_and_remove_low_freq_stores(
         count_toko:int = config.COUNT_TOKO
     ) -> pd.DataFrame:
     # validate column in dataframe
-    required_columns = ['OP', 'Toko', 'Kode Zona', 'KM Master', 'KM Tempuh', 'KM Max']
+    required_columns = ['OP', 'Toko', 'Kode Zona', 'KM Master', 'KM Tempuh']
     for col in required_columns:
         if col not in df.columns:
             logger.exception(f"Column '{col}' not found in DataFrame.")
@@ -317,17 +315,16 @@ def pivot_and_remove_low_freq_stores(
     # create pivot table
     pivot_table = pd.pivot_table(
                     df, index=['OP', 'Toko', 'Kode Zona'],
-                    values=['KM Master', 'KM Tempuh', 'KM Max'],
+                    values=['KM Master', 'KM Tempuh'],
                     aggfunc={
                         'Toko': 'count',
                         'KM Master': 'mean',
-                        'KM Tempuh': 'mean',
-                        'KM Max': 'mean'
+                        'KM Tempuh': 'mean'
                     })
     
     # format pivot table
     pivot_table = pivot_table.rename(columns={'Toko': 'Freq Toko'}).reset_index()
-    pivot_table = pivot_table[['OP', 'Toko', 'Kode Zona', 'Freq Toko', 'KM Master', 'KM Tempuh', 'KM Max']]
+    pivot_table = pivot_table[['OP', 'Toko', 'Kode Zona', 'Freq Toko', 'KM Master', 'KM Tempuh']]
     pivot_table['KM Tempuh'] = pivot_table['KM Tempuh'].round()
 
     logger.info(f"Pivot table created: {mask_numeric_value(f'{len(pivot_table[['OP', 'Toko']].drop_duplicates()):,}')} unique stores")
@@ -339,6 +336,68 @@ def pivot_and_remove_low_freq_stores(
 
     return pivot_table_filtered
 
+def get_unique_stores(
+        df:pd.DataFrame, 
+        columns:list = config.UNIQUE_STORE_COLUMNS
+    ) -> tuple:
+    '''
+    Get unique store combinations from a DataFrame.
+
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        Input DataFrame.
+    columns : list
+        List of column names to consider for unique store combinations.
+    
+    Returns:
+    --------
+    tuple
+        Tuple of unique store combinations.
+    '''
+    # validate columns
+    for col in columns:
+        if col not in df.columns:
+            logger.exception(f"Column '{col}' not found in DataFrame.")
+            raise ValueError(f"Column '{col}' not found in DataFrame.")
+        
+    return tuple(map(tuple, df[columns].drop_duplicates().values))
+
+def get_diff_unique_stores(
+        df1:pd.DataFrame, df2:pd.DataFrame, 
+        columns:list = config.UNIQUE_STORE_COLUMNS
+    ) -> tuple:
+    '''
+    Get the difference in unique store combinations between two DataFrames.
+
+    Parameters:
+    -----------
+    df1 : pd.DataFrame
+        First input DataFrame.
+    df2 : pd.DataFrame
+        Second input DataFrame.
+    columns : list
+        List of column names to consider for unique store combinations.
+    
+    Returns:
+    --------
+    tuple
+        Tuple of unique store combinations present in df1 but not in df2.
+    '''
+    # validate columns
+    for col in columns:
+        if col not in df1.columns:
+            logger.exception(f"Column '{col}' not found in first DataFrame.")
+            raise ValueError(f"Column '{col}' not found in first DataFrame.")
+        if col not in df2.columns:
+            logger.exception(f"Column '{col}' not found in second DataFrame.")
+            raise ValueError(f"Column '{col}' not found in second DataFrame.")
+        
+    # get unique stores from both dataframes    
+    set1 = set(get_unique_stores(df1, columns))
+    set2 = set(get_unique_stores(df2, columns))
+
+    return tuple(set1 - set2)
 
 class DataTracker:
     def __init__(
@@ -427,14 +486,14 @@ class DataTracker:
             f"Step Time: {step_duration:.2f}s | Cumulative Time: {cumulative_time:.2f}s"
         )
 
-    def get_total_rows(self) -> int:
+    def get_final_rows(self) -> int:
         '''
-        Get total rows tracked at the last step.
+        Get the final row count tracked.
 
         Returns:
         --------
         int
-            Total rows at the last tracked step.
+            Final row count.
         '''
         if self.rows:
             return self.rows[-1]
