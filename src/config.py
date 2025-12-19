@@ -62,5 +62,7 @@ HIDE_VALUES = True
 # ==============================================================
 # ANALYSIS CONFIGURATION
 # ==============================================================
-RIGHT_DEV_KM_TRESHOLD = 3.0  # in percentage
+RIGHT_DEV_KM_TRESHOLD = 3.0     # in percentage
+MZN_FREQ_TOKO_THRESHOLD = 1     # in count
+MZN_DIFF_KM_TRESHOLD = 9        # in km
 
