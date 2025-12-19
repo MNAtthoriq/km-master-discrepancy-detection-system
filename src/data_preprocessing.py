@@ -9,15 +9,17 @@ import config
 import logging   
 
 # set up logging
-logging.basicConfig(level=config.LOG_LEVEL, format=config.LOG_FORMAT) # get override from utils.py later (force=True)
+logging.basicConfig(
+    level=config.LOG_LEVEL, format=config.LOG_FORMAT
+) # get override from utils.py later (force=True)
 logger = logging.getLogger(__name__)
 
 def convert_to_op_code(
-      df:pd.DataFrame, sheets_url:str, hide_values:bool = config.HIDE_VALUES,
-      sheets_name:str = config.CTOC_SHEETS_NAME, method:str = config.CTOC_METHOD_DEFAULT,
-      left_on:str = config.CTOC_DF_OP_NAME, 
-      right_on_0:str = config.CTOC_MASTER_OP_NAME, right_on_1:str = config.CTOC_MASTER_OP_CODE
-    ) -> pd.DataFrame:
+    df:pd.DataFrame, sheets_url:str, hide_values:bool = config.HIDE_VALUES,
+    sheets_name:str = config.CTOC_SHEETS_NAME, method:str = config.CTOC_METHOD_DEFAULT,
+    left_on:str = config.CTOC_DF_OP_NAME, 
+    right_on_0:str = config.CTOC_MASTER_OP_NAME, right_on_1:str = config.CTOC_MASTER_OP_CODE
+) -> pd.DataFrame:
   """
   Rename Operating Point (OP) name to OP code by merging it with master OP data from Google Sheets.
 
@@ -66,21 +68,27 @@ def convert_to_op_code(
   logger.info(f"Loaded {mask_numeric_value(f'{len(df_master_op):,}')} OP codes from sheets {sheets_name}")
 
   # convert op name to op code
-  df_merged_0 = pd.merge(df, df_master_op, left_on=left_on, right_on=right_on_0, how='left')
+  df_merged_0 = pd.merge(
+      df, df_master_op, left_on=left_on, right_on=right_on_0, how='left'
+  )
   unmatched = df_merged_0[df_merged_0[right_on_1].isna()].copy()
   matched = df_merged_0[~df_merged_0[right_on_1].isna()].copy()
 
   # handle cases where OP name is already OP code
   if not unmatched.empty:
     unmatched_merged = pd.merge(
-                          unmatched.drop(columns=[right_on_0, right_on_1]), 
-                          df_master_op, left_on=left_on, right_on=right_on_1, how='left'
-                        )
-    df_merged = pd.concat([matched, unmatched_merged], ignore_index=True).drop(columns=[right_on_0, left_on])
+        unmatched.drop(columns=[right_on_0, right_on_1]), 
+        df_master_op, left_on=left_on, right_on=right_on_1, how='left'
+    )
+    df_merged = pd.concat(
+        [matched, unmatched_merged], ignore_index=True
+    ).drop(columns=[right_on_0, left_on])
   else:
     df_merged = df_merged_0.drop(columns=[right_on_0, left_on])
 
-  df_merged = df_merged.rename(columns={right_on_1: left_on}).drop_duplicates().reset_index(drop=True)
+  df_merged = df_merged.rename(
+      columns={right_on_1: left_on}
+  ).drop_duplicates().reset_index(drop=True)
 
   # handle unmapped OP codes
   if method == "complete":
@@ -119,13 +127,13 @@ def convert_to_op_code(
     raise ValueError("method must be 'complete' or 'partial'")
 
 def correct_scientific_notation(
-      df:pd.DataFrame, sheets_url:str,
-      sheets_name:str = config.CSN_SHEETS_NAME, hide_values:bool = config.HIDE_VALUES,
-      df_column_0:str = config.CSN_DF_OP_CODE, df_column_1:str = config.CSN_DF_KM_MASTER,
-      df_column_2:str = config.CSN_DF_TOKO_SAINTIFIK, df_column_3:str = config.CSN_DF_TOKO_BENAR,
-      master_column_0:str = config.CSN_MASTER_OP_CODE, master_column_1:str = config.CSN_MASTER_KM_MASTER,
-      master_column_2:str = config.CSN_MASTER_TOKO_SAINTIFIK, master_column_3:str = config.CSN_MASTER_TOKO_BENAR
-    ) -> pd.DataFrame:
+    df:pd.DataFrame, sheets_url:str,
+    sheets_name:str = config.CSN_SHEETS_NAME, hide_values:bool = config.HIDE_VALUES,
+    df_column_0:str = config.CSN_DF_OP_CODE, df_column_1:str = config.CSN_DF_KM_MASTER,
+    df_column_2:str = config.CSN_DF_TOKO_SAINTIFIK, df_column_3:str = config.CSN_DF_TOKO_BENAR,
+    master_column_0:str = config.CSN_MASTER_OP_CODE, master_column_1:str = config.CSN_MASTER_KM_MASTER,
+    master_column_2:str = config.CSN_MASTER_TOKO_SAINTIFIK, master_column_3:str = config.CSN_MASTER_TOKO_BENAR
+) -> pd.DataFrame:
   """
   Change the store code that changes due to scientific format when exporting from database to the actual store code.
   
@@ -183,7 +191,9 @@ def correct_scientific_notation(
   df_master.columns = df_master.iloc[0]
   df_master = df_master[1:]
   df_master = df_master.reset_index(drop=True)
-  df_master = df_master[[master_column_0, master_column_1, master_column_2, master_column_3]].copy()
+  df_master = df_master[
+      [master_column_0, master_column_1, master_column_2, master_column_3]
+  ].copy()
 
   logger.info(f"Loaded {mask_numeric_value(f'{len(df_master):,}')} store mappings from sheets {sheets_name}")
 
@@ -204,30 +214,43 @@ def correct_scientific_notation(
   # if scientific code with delimiter ',' example 8,00E+34
   if rows_comma > 0:
     mapping = {
-      (row[master_column_0], row[master_column_1], row[master_column_2].replace(".", ",")): 
-      row[master_column_3] for _, row in df_master.iterrows()
+        (
+          row[master_column_0], row[master_column_1], 
+          row[master_column_2].replace(".", ",")
+        ): 
+        row[master_column_3] for _, row in df_master.iterrows()
     }
     df[df_column_3] = df.apply(
-      lambda r: mapping.get((r[df_column_0], r[df_column_1], r[df_column_2]), r[df_column_3]),
-      axis=1
+        lambda r: mapping.get(
+          (r[df_column_0], r[df_column_1], r[df_column_2]), r[df_column_3]
+        ), axis=1
     )
   # if scientific code with delimiter '.' example 8.00E+34
   elif rows_period > 0:
     mapping = {
-      (row[master_column_0], row[master_column_1], row[master_column_2].replace(",", ".")): 
-      row[master_column_3] for _, row in df_master.iterrows()
+        (
+          row[master_column_0], row[master_column_1], 
+          row[master_column_2].replace(",", ".")
+        ): 
+        row[master_column_3] for _, row in df_master.iterrows()
     }
     df[df_column_3] = df.apply(
-      lambda r: mapping.get((r[df_column_0], r[df_column_1], r[df_column_2]), r[df_column_3]),
-      axis=1
+        lambda r: mapping.get(
+          (r[df_column_0], r[df_column_1], r[df_column_2]), r[df_column_3]
+        ), axis=1
     )
 
   # store a list of store codes in df_master that is not scientific to avoid repeating master fixes
-  not_scientific_list = list(df_master[df_master[master_column_3].astype(str).str.contains(r'\.')][master_column_3])
+  not_scientific_list = list(df_master[
+      df_master[master_column_3].astype(str).str.contains(r'\.')
+      ][master_column_3]
+  )
 
   # check for remaining scientific notation
   df_comma_period = df[df[df_column_3].astype(str).str.contains(r'\,|\.')].copy()
-  df_comma_period = df_comma_period[~df_comma_period[df_column_3].isin(not_scientific_list)].copy()
+  df_comma_period = df_comma_period[
+      ~df_comma_period[df_column_3].isin(not_scientific_list)
+  ].copy()
   rows_comma_period = len(df_comma_period)
   sample_comma_period = df_comma_period[df_column_3].head(5).tolist()
 
