@@ -10,13 +10,15 @@ import pandas as pd
 import logging
 
 # set up logging
-logging.basicConfig(level=config.LOG_LEVEL, format=config.LOG_FORMAT) # get override from utils.py later (force=True)
+logging.basicConfig(
+    level=config.LOG_LEVEL, format=config.LOG_FORMAT
+) # get override from utils.py later (force=True)
 logger = logging.getLogger(__name__)
 
 def sheets_loader(
-        sheets_url:str, credentials_path:str = config.CREDENTIALS_PATH,
-        hide_values:bool = config.HIDE_VALUES
-    ) -> gspread.Spreadsheet:
+    sheets_url:str, credentials_path:str = config.CREDENTIALS_PATH,
+    hide_values:bool = config.HIDE_VALUES
+) -> gspread.Spreadsheet:
     """
     Authorize Google Sheets API and return worksheet.
     
@@ -54,11 +56,11 @@ def sheets_loader(
     return sheets
 
 def sheets_updater(
-        sheets_url:str, df:pd.DataFrame, 
-        worksheet:str = config.UPDATED_WORKSHEET, 
-        credentials_path:str = config.CREDENTIALS_PATH,
-        hide_values:bool = config.HIDE_VALUES
-    ) -> None:
+    sheets_url:str, df:pd.DataFrame, 
+    worksheet:str = config.UPDATED_WORKSHEET, 
+    credentials_path:str = config.CREDENTIALS_PATH,
+    hide_values:bool = config.HIDE_VALUES
+) -> None:
     """
     Authorize Google Sheets API with edit access and return worksheet.
     
