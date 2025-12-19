@@ -14,14 +14,17 @@ from matplotlib.patches import Patch
 import seaborn as sns
 
 # setup logging
+logging.basicConfig(
+    level=config.LOG_LEVEL, format=config.LOG_FORMAT
+) # get override from utils.py later (force=True)
 logger = logging.getLogger(__name__)
 
 def setup_logging(
-        log_file_path:str = config.LOGS_PATH, 
-        log_level:int = config.LOG_LEVEL,
-        log_format:str = config.LOG_FORMAT, 
-        log_date_format:str = config.LOG_DATE_FORMAT
-    ) -> None:
+    log_file_path:str = config.LOGS_PATH, 
+    log_level:int = config.LOG_LEVEL,
+    log_format:str = config.LOG_FORMAT, 
+    log_date_format:str = config.LOG_DATE_FORMAT
+) -> None:
     """
     Setup logging configuration.
 
@@ -53,11 +56,11 @@ def setup_logging(
     )
 
 def mask_numeric_value(
-        value,
-        mask_char:str = '*',
-        symbols_to_preserve:tuple = config.SYMBOLS_TO_PRESERVE,
-        hide_values:bool = config.HIDE_VALUES
-    ) -> str:
+    value,
+    mask_char:str = '*',
+    symbols_to_preserve:tuple = config.SYMBOLS_TO_PRESERVE,
+    hide_values:bool = config.HIDE_VALUES
+) -> str:
     """
     Mask numeric values for data privacy while preserving ALL structure.
 
@@ -106,10 +109,10 @@ def mask_numeric_value(
     return masked 
 
 def filter_iqr(
-        df:pd.DataFrame, column:str = config.IQR_COLUMN, 
-        lower_constant:float = config.LOWER_IQR_CONSTANT, 
-        upper_constant:float = config.UPPER_IQR_CONSTANT
-    ) -> tuple:
+    df:pd.DataFrame, column:str = config.IQR_COLUMN, 
+    lower_constant:float = config.LOWER_IQR_CONSTANT, 
+    upper_constant:float = config.UPPER_IQR_CONSTANT
+) -> tuple:
     '''
     Apply IQR filtering to a DataFrame column to remove outliers.
 
@@ -141,7 +144,9 @@ def filter_iqr(
     upper_bound = Q3 + (upper_constant * IQR)
 
     # filter dataframe
-    df_filtered = df[(df[column] >= lower_bound) & (df[column] <= upper_bound)].copy()
+    df_filtered = df[
+        (df[column] >= lower_bound) & (df[column] <= upper_bound)
+    ].copy()
 
     rows_before = len(df)
     rows_after = len(df_filtered)
@@ -153,14 +158,14 @@ def filter_iqr(
     return df_filtered, Q1, Q3, IQR, lower_bound, upper_bound
 
 def plot_outlier(
-        df:pd.DataFrame, name:str = "Main Method",
-        column:str = config.IQR_COLUMN, 
-        lower_constant:float = config.LOWER_IQR_CONSTANT, 
-        upper_constant:float = config.UPPER_IQR_CONSTANT,
-        lower_zoom_constant:float = config.LOWER_ZOOM_CONSTANT, 
-        upper_zoom_constant:float = config.UPPER_ZOOM_CONSTANT,
-        hide_values:bool = config.HIDE_VALUES
-    ) -> None:
+    df:pd.DataFrame, name:str = "Main Method",
+    column:str = config.IQR_COLUMN, 
+    lower_constant:float = config.LOWER_IQR_CONSTANT, 
+    upper_constant:float = config.UPPER_IQR_CONSTANT,
+    lower_zoom_constant:float = config.LOWER_ZOOM_CONSTANT, 
+    upper_zoom_constant:float = config.UPPER_ZOOM_CONSTANT,
+    hide_values:bool = config.HIDE_VALUES
+) -> None:
     '''
     Plot outlier detection using IQR method for a DataFrame column.
 
@@ -185,7 +190,9 @@ def plot_outlier(
     '''
     logger.info(f"Plotting outlier detection for '{name}' on column '{column}' for '{name}'")
 
-    _, Q1, Q3, IQR, lower_bound, upper_bound = filter_iqr(df, column, lower_constant, upper_constant)
+    _, Q1, Q3, IQR, lower_bound, upper_bound = filter_iqr(
+        df, column, lower_constant, upper_constant
+    )
     lower_zoom = Q1 - (lower_zoom_constant * IQR)
     upper_zoom = Q3 + (upper_zoom_constant * IQR)
 
@@ -302,9 +309,24 @@ def plot_outlier(
     logger.info(f"Outlier detection plot generated for '{name}' on column '{column}' for '{name}'")
 
 def pivot_and_remove_low_freq_stores(
-        df:pd.DataFrame, 
-        count_toko:int = config.COUNT_TOKO
-    ) -> pd.DataFrame:
+    df:pd.DataFrame, 
+    count_toko:int = config.COUNT_TOKO
+) -> pd.DataFrame:
+    '''
+    Create a pivot table and remove low-frequency stores.
+
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        Input DataFrame.
+    count_toko : int
+        Minimum frequency threshold to keep a store.
+    
+    Returns:
+    --------
+    pd.DataFrame
+        Filtered pivot table DataFrame.
+    '''
     # validate column in dataframe
     required_columns = ['OP', 'Toko', 'Kode Zona', 'KM Master', 'KM Tempuh']
     for col in required_columns:
@@ -314,17 +336,20 @@ def pivot_and_remove_low_freq_stores(
         
     # create pivot table
     pivot_table = pd.pivot_table(
-                    df, index=['OP', 'Toko', 'Kode Zona'],
-                    values=['KM Master', 'KM Tempuh'],
-                    aggfunc={
-                        'Toko': 'count',
-                        'KM Master': 'mean',
-                        'KM Tempuh': 'mean'
-                    })
+        df, index=['OP', 'Toko', 'Kode Zona'],
+        values=['KM Master', 'KM Tempuh'],
+        aggfunc={
+            'Toko': 'count',
+            'KM Master': 'mean',
+            'KM Tempuh': 'mean'
+        }
+    )
     
     # format pivot table
     pivot_table = pivot_table.rename(columns={'Toko': 'Freq Toko'}).reset_index()
-    pivot_table = pivot_table[['OP', 'Toko', 'Kode Zona', 'Freq Toko', 'KM Master', 'KM Tempuh']]
+    pivot_table = pivot_table[
+        ['OP', 'Toko', 'Kode Zona', 'Freq Toko', 'KM Master', 'KM Tempuh']
+    ]
     pivot_table['KM Tempuh'] = pivot_table['KM Tempuh'].round()
 
     logger.info(f"Pivot table created: {mask_numeric_value(f'{len(pivot_table[['OP', 'Toko']].drop_duplicates()):,}')} unique stores")
@@ -337,9 +362,9 @@ def pivot_and_remove_low_freq_stores(
     return pivot_table_filtered
 
 def get_unique_stores(
-        df:pd.DataFrame, 
-        columns:list = config.UNIQUE_STORE_COLUMNS
-    ) -> tuple:
+    df:pd.DataFrame, 
+    columns:list = config.UNIQUE_STORE_COLUMNS
+) -> tuple:
     '''
     Get unique store combinations from a DataFrame.
 
@@ -364,9 +389,9 @@ def get_unique_stores(
     return tuple(map(tuple, df[columns].drop_duplicates().values))
 
 def get_diff_unique_stores(
-        df1:pd.DataFrame, df2:pd.DataFrame, 
-        columns:list = config.UNIQUE_STORE_COLUMNS
-    ) -> tuple:
+    df1:pd.DataFrame, df2:pd.DataFrame, 
+    columns:list = config.UNIQUE_STORE_COLUMNS
+) -> tuple:
     '''
     Get the difference in unique store combinations between two DataFrames.
 
@@ -401,8 +426,8 @@ def get_diff_unique_stores(
 
 class DataTracker:
     def __init__(
-            self, name:str = "DataTracker"
-        ) -> None:
+        self, name:str = "DataTracker"
+    ) -> None:
         '''
         Class to track data processing steps, row counts, and execution time.
 
@@ -424,9 +449,9 @@ class DataTracker:
         logger.info(f"Initialized DataTracker for: [{self.name}]")
 
     def track(
-            self, df:pd.DataFrame, step_name:str, 
-            rows_unique:list = None
-        ) -> None:
+        self, df:pd.DataFrame, step_name:str, 
+        rows_unique:list = None
+    ) -> None:
         '''
         Track a data processing step by recording the step name, current row count, and execution time.
 
@@ -556,8 +581,12 @@ class DataTracker:
         })
 
         # format dataframe
-        df_summary["Counts"] = df_summary["Counts"].apply(lambda x: mask_numeric_value(f"{x:,}"))
-        df_summary["Change"] = df_summary["Change"].apply(lambda x: mask_numeric_value(f"{x:+,}"))
+        df_summary["Counts"] = df_summary["Counts"].apply(
+            lambda x: mask_numeric_value(f"{x:,}")
+        )
+        df_summary["Change"] = df_summary["Change"].apply(
+            lambda x: mask_numeric_value(f"{x:+,}")
+        )
         df_summary["Change (%)"] = df_summary["Change (%)"].map("{:+.2f}".format)
         df_summary["Retained (%)"] = df_summary["Retained (%)"].map("{:.2f}".format)
         df_summary["Duration (s)"] = df_summary["Duration (s)"].map("{:.2f}".format)
@@ -567,9 +596,9 @@ class DataTracker:
         return df_summary
         
 def result_summary(
-        total_stores:int, validated_stores:int,
-        stores_result:dict, times_result: dict
-    ) -> None:
+    total_stores:int, validated_stores:int,
+    stores_result:dict, times_result: dict
+) -> None:
     '''
     Display a summary of the data processing results including store counts and execution times.
 
@@ -587,21 +616,23 @@ def result_summary(
         Whether to hide numeric values in the summary.
     '''
     # calculate stores
-    validated_stores_pct = (validated_stores / total_stores * 100) if total_stores > 0 else 0
+    validated_stores_pct = (
+        (validated_stores / total_stores * 100) if total_stores > 0 else 0
+    )
 
-    total_rec_stores = sum(stores.get_total_rows() for stores in stores_result.values())
-    total_rec_stores_pct = (total_rec_stores / total_stores * 100) if total_stores > 0 else 0
+    total_rec_stores = (
+        sum(stores.get_final_rows() for stores in stores_result.values())
+    )
+    total_rec_stores_pct = (
+        (total_rec_stores / total_stores * 100) if total_stores > 0 else 0
+    )
 
     unprocessed_stores = total_stores - (validated_stores + total_rec_stores)
-    unprocessed_stores_pct = (unprocessed_stores / total_stores * 100) if total_stores > 0 else 0
+    unprocessed_stores_pct = (
+        (unprocessed_stores / total_stores * 100) if total_stores > 0 else 0
+    )
 
     total_time = sum(tracker.get_total_time() for tracker in times_result.values())
-
-    # hide values if configured
-    display_total_stores = mask_numeric_value(f"{total_stores:>8,}")
-    display_validated_stores = mask_numeric_value(f"{validated_stores:>8,}")
-    display_total_rec_stores = mask_numeric_value(f"{total_rec_stores:>8,}")
-    display_unprocessed_stores = mask_numeric_value(f"{unprocessed_stores:>8,}")
 
     # console summary
     BOLD = '\033[1m'
@@ -611,18 +642,19 @@ def result_summary(
     print("\n" + "="*70)
     print(f"{BOLD}EXECUTION STORE SUMMARY{RESET}")
     print("="*70)
-    print(f"{'Total Analyzed Stores':<30}: {display_total_stores} stores")
-    print(f"{'Validated Stores':<30}: {display_validated_stores} stores ({validated_stores_pct:05.2f}%)")
+    print(f"{'Total Analyzed Stores':<30}: {f"{mask_numeric_value(f"{total_stores:,}"):>8}"} stores")
+    print(f"{'Validated Stores':<30}: {f"{mask_numeric_value(f"{validated_stores:,}"):>8}"} stores ({validated_stores_pct:05.2f}%)")
     print("\nRecommendations by Method:")
     print("-"*70)
     for method_name, tracker in stores_result.items():
-        method_stores = tracker.get_total_rows()
-        display_method_stores = mask_numeric_value(f"{method_stores:>8,}")
-        method_stores_pct = (method_stores / total_stores * 100) if total_stores > 0 else 0
-        print(f"{method_name:<30}: {display_method_stores} stores ({method_stores_pct:05.2f}%)")
+        method_stores = tracker.get_final_rows()
+        method_stores_pct = (
+            (method_stores / total_stores * 100) if total_stores > 0 else 0
+        )
+        print(f"{method_name:<30}: {f"{mask_numeric_value(f"{method_stores:,}"):>8}"} stores ({method_stores_pct:05.2f}%)")
     print("-"*70)
-    print(f"{'Total Recommended Stores':<30}: {display_total_rec_stores} stores ({total_rec_stores_pct:05.2f}%)")
-    print(f"\n{'Unprocessed Stores':<30}: {display_unprocessed_stores} stores ({unprocessed_stores_pct:05.2f}%)")
+    print(f"{'Total Recommended Stores':<30}: {f"{mask_numeric_value(f"{total_rec_stores:,}"):>8}"} stores ({total_rec_stores_pct:05.2f}%)")
+    print(f"\n{'Unprocessed Stores':<30}: {f"{mask_numeric_value(f"{unprocessed_stores:,}"):>8}"} stores ({unprocessed_stores_pct:05.2f}%)")
     # time summary
     print("\n" + "="*70)
     print(f"{BOLD}EXECUTION TIME SUMMARY{RESET}")
@@ -632,10 +664,8 @@ def result_summary(
         print(f"{method_name:<30}: {method_time:>8.2f} secs")
     print("-"*70)
     print(f"{'Total Execution Time':<30}: {total_time:>8.2f} secs ({total_time/60:05.2f} mins)\n")
-    print("="*70 + "\n")
 
-    logger.info(f"Displayed results summary: {display_total_stores} total stores, {display_validated_stores} validated stores, {display_total_rec_stores} recommended stores, {display_unprocessed_stores} unprocessed stores, total execution time {total_time:.2f} secs.")
+    logger.info(f"Displayed results summary: {mask_numeric_value(f'{total_stores:,}')} total stores, {mask_numeric_value(f'{validated_stores:,}')} validated stores, {mask_numeric_value(f'{total_rec_stores:,}')} recommended stores, {mask_numeric_value(f'{unprocessed_stores:,}')} unprocessed stores, total execution time {total_time:.2f} secs.")
 
-
-    
-    
+if __name__ == "__main__":
+    pass
